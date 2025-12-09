@@ -1,1 +1,12 @@
 hello world world world meow meow
+<!doctype html>
+<html>
+  <head>
+    <meta charset = "utf-8">
+    <title>網站標題</title>
+    <link rel="icon" href="IMG_7558.PNG">
+  </head>
+  <body>
+      hello world
+  </body>
+</html>
