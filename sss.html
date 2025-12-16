@@ -11,51 +11,40 @@
 </html>
 <!DOCTYPE html>
 <html>
-<!DOCTYPE html>
-<html>
 <head>
-    <title>🖱️ 全屏手指追蹤</title>
+    <title>🖱️ 26張手指追蹤</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: Arial; 
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            overflow: hidden;
+            color: white; 
+            overflow: hidden; 
             height: 100vh;
         }
         #canvas { 
             width: 100vw !important; 
             height: 100vh !important; 
             cursor: crosshair; 
-            border-radius: 0;
-            display: block;
+            display: block; 
         }
         .ui {
-            position: fixed;
-            top: 20px;
-            left: 20px;
+            position: fixed; 
+            top: 20px; 
+            left: 20px; 
             z-index: 100;
-            background: rgba(0,0,0,0.7);
-            padding: 15px;
+            background: rgba(0,0,0,0.7); 
+            padding: 15px; 
             border-radius: 10px;
             backdrop-filter: blur(10px);
         }
-        h1 { font-size: 1.8em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .instructions { font-size: 14px; max-width: 300px; line-height: 1.4; }
-        code { background: rgba(255,255,255,0.2); padding: 2px 4px; border-radius: 3px; }
     </style>
 </head>
 <body>
     <div class="ui">
-        <h1>🖱️ 全屏手指追蹤</h1>
-        <div class="instructions">
-            <strong>🔥 照片位置：</strong><br>
-            找到 <code>defaultPhotos</code> 陣列<br>
-            替換 <code>src: 'https://...'</code><br>
-            上傳到 <a href="https://imgur.com" style="color: #fff;">Imgur</a>
-        </div>
+        <h1>🖱️ 手指追蹤</h1>
+        <div>填入26張照片，手指自動追蹤鼠標</div>
     </div>
     <canvas id="canvas"></canvas>
 
@@ -66,7 +55,6 @@
         let mouseX = 0.5, mouseY = 0.5;
         let photos = [];
         
-        // 🔥 全屏尺寸調整
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -74,39 +62,36 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // 🔥 這裡放你的照片連結！
+        // 🔥 26張照片位置（只改 src）
         const defaultPhotos = [
-            {
-                src: 'https://images.unsplash.com/photo-1574169208507-84376144848b?w=1200',
-                name: '手勢1'
-            },
-            {
-                src: 'https://images.unsplash.com/photo-1587829741301-dc798b83addb?w=1200', 
-                name: '手勢2'
-            },
-            {
-                src: 'https://images.unsplash.com/photo-1518098268026-4e266b1f3cd8?w=1200',
-                name: '手勢3'
-            },
-            {
-                src: 'https://images.unsplash.com/photo-1600844164376-7857e4d8a9a6?w=1200',
-                name: '手勢4'
-            },
-            {
-                src: 'https://images.unsplash.com/photo-1600844164376-7857e4d8a9a6?w=1200',
-                name: '手勢5' 
-            },
-            {
-                src: 'https://images.unsplash.com/photo-1600844164376-7857e4d8a9a6?w=1200',
-                name: '手勢6' 
-            },
-            {
-                src: 'https://images.unsplash.com/photo-1600844164376-7857e4d8a9a6?w=1200',
-                name: '手勢7'
-            }
+            { src: 'IMG_8150.JPG', name: '1' },'               
+            { src: 'IMG_8151.JPG', name: '2' },
+            { src: 'IMG_8152.JPG', name: '3' },
+            { src: 'IMG_8153.JPG', name: '4' },
+            { src: 'IMG_8154.JPG', name: '5' },
+            { src: 'IMG_8155.JPG', name: '6' },
+            { src: 'IMG_8156.JPG', name: '7' },
+            { src: 'IMG_8157.JPG', name: '8' },
+            { src: 'IMG_8158.JPG', name: '9' },
+            { src: 'IMG_8159.JPG', name: '10' },
+            { src: 'IMG_8160.JPG', name: '11' },
+            { src: 'IMG_8161.JPG', name: '12' },
+            { src: 'IMG_8162.JPG', name: '13' },
+            { src: 'IMG_8163.JPG', name: '14' },
+            { src: 'IMG_8164.JPG', name: '15' },
+            { src: 'IMG_8165.JPG', name: '16' },
+            { src: 'IMG_8166.JPG', name: '17' },
+            { src: 'IMG_8167.JPG', name: '18' },
+            { src: 'IMG_8168.JPG', name: '19' },
+            { src: 'IMG_8169.JPG', name: '20' },
+            { src: 'IMG_8170.JPG', name: '21' },
+            { src: 'IMG_8171.JPG', name: '22' },
+            { src: 'IMG_8172.JPG', name: '23' },
+            { src: 'IMG_8173.JPG', name: '24' },
+            { src: 'IMG_8174.JPG', name: '25' },
+            { src: 'IMG_8175.JPG', name: '26' }
         ];
 
-        // 初始化 MediaPipe
         async function initHands() {
             hands = new window.Hands({locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
@@ -120,23 +105,24 @@
             hands.onResults(() => render());
         }
 
-        // 載入照片
         async function loadPhotos() {
             for (let photoData of defaultPhotos) {
                 const img = new Image();
                 await new Promise(resolve => {
                     img.onload = async () => {
-                        const tempCanvas = document.createElement('canvas');
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCanvas.width = 640;
-                        tempCanvas.height = 480;
-                        tempCtx.drawImage(img, 0, 0, 640, 480);
+                        const detectCanvas = document.createElement('canvas');
+                        const detectCtx = detectCanvas.getContext('2d');
+                        detectCanvas.width = 640;
+                        detectCanvas.height = 480;
+                        detectCtx.drawImage(img, 0, 0, 640, 480);
                         
                         try {
-                            const results = await hands.send({image: tempCanvas});
+                            const results = await hands.send({image: detectCanvas});
                             photos.push({
                                 img: img,
                                 landmarks: results.multiHandLandmarks?.[0] || null,
+                                detectScaleX: img.naturalWidth / 640,
+                                detectScaleY: img.naturalHeight / 480,
                                 name: photoData.name
                             });
                         } catch(e) {
@@ -151,38 +137,28 @@
             render();
         }
 
-        // 全屏鼠標追蹤
         window.onmousemove = (e) => {
             mouseX = e.clientX / window.innerWidth;
             mouseY = e.clientY / window.innerHeight;
             render();
         };
 
-        // 全屏渲染
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            if (photos.length === 0) {
-                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                ctx.font = 'bold 48px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('載入中...', canvas.width/2, canvas.height/2);
-                return;
-            }
+            if (photos.length === 0) return;
 
             const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
             if (!randomPhoto.img) return;
 
-            // 🔥 全屏填滿照片
-            const scaleX = canvas.width / randomPhoto.img.width;
-            const scaleY = canvas.height / randomPhoto.img.height;
-            const scale = Math.max(scaleX, scaleY); // 拉伸填滿
-            const imgW = randomPhoto.img.width * scale;
-            const imgH = randomPhoto.img.height * scale;
+            const scaleX = canvas.width / randomPhoto.img.naturalWidth;
+            const scaleY = canvas.height / randomPhoto.img.naturalHeight;
+            const scale = Math.max(scaleX, scaleY);
+            const imgW = randomPhoto.img.naturalWidth * scale;
+            const imgH = randomPhoto.img.naturalHeight * scale;
             const imgX = (canvas.width - imgW) / 2;
             const imgY = (canvas.height - imgH) / 2;
 
-            // 全屏照片 + 陰影
+            // 只顯示照片（隱藏紅點綠線）
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.4)';
             ctx.shadowBlur = 30;
@@ -190,90 +166,39 @@
             ctx.drawImage(randomPhoto.img, imgX, imgY, imgW, imgH);
             ctx.restore();
 
-            // 手指追蹤
+            // 隱藏手指追蹤線條和紅點
             if (randomPhoto.landmarks) {
                 const targetX = mouseX * canvas.width;
                 const targetY = mouseY * canvas.height;
-                const adjusted = adjustHand(randomPhoto.landmarks, targetX, targetY, imgX, imgY, scale);
-                drawHand(ctx, adjusted);
+                const mouseDetectX = (targetX - imgX) / scale / randomPhoto.detectScaleX;
+                const mouseDetectY = (targetY - imgY) / scale / randomPhoto.detectScaleY;
+                const adjusted = adjustHandPrecise(randomPhoto.landmarks, mouseDetectX, mouseDetectY);
+                // 不繪製綠線和點
             }
-
-            // 🔥 全屏脈動鼠標點
-            const pulse = Math.sin(Date.now() * 0.015) * 0.5 + 0.5;
-            ctx.save();
-            ctx.shadowColor = '#FF4444';
-            ctx.shadowBlur = 40 + pulse * 20;
-            ctx.fillStyle = `rgba(255, 50, 50, ${0.9 + pulse * 0.1})`;
-            ctx.beginPath();
-            ctx.arc(targetX, targetY, 20 + pulse * 15, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.restore();
-
-            // 照片名稱（左上角）
-            ctx.fillStyle = 'rgba(255,255,255,0.95)';
-            ctx.font = 'bold 32px Arial';
-            ctx.textAlign = 'left';
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetY = 3;
-            ctx.fillText(randomPhoto.name, 30, 60);
+            // 不繪製紅色鼠標點
         }
 
-        function adjustHand(landmarks, targetX, targetY, imgX, imgY, scale) {
+        function adjustHandPrecise(landmarks, targetDetectX, targetDetectY) {
             const adjusted = [];
             const tip = landmarks[8];
-            const origTipX = tip.x * scale + imgX;
-            const origTipY = tip.y * scale + imgY;
-            const angle = Math.atan2(targetY - origTipY, targetX - origTipX);
+            const dx = targetDetectX - tip.x;
+            const dy = targetDetectY - tip.y;
+            const angle = Math.atan2(dy, dx);
             const cosA = Math.cos(angle);
             const sinA = Math.sin(angle);
 
             for (let landmark of landmarks) {
-                const origX = landmark.x * scale + imgX;
-                const origY = landmark.y * scale + imgY;
-                const dx = origX - origTipX;
-                const dy = origY - origTipY;
-                const rotatedX = origTipX + dx * cosA - dy * sinA;
-                const rotatedY = origTipY + dx * sinA + dy * cosA;
+                const px = landmark.x - tip.x;
+                const py = landmark.y - tip.y;
                 adjusted.push({
-                    x: (rotatedX - imgX) / scale,
-                    y: (rotatedY - imgY) / scale,
+                    x: tip.x + px * cosA - py * sinA,
+                    y: tip.y + px * sinA + py * cosA,
                     z: landmark.z
                 });
             }
             return adjusted;
         }
 
-        function drawHand(ctx, landmarks) {
-            ctx.strokeStyle = 'rgba(0, 255, 0, 0.95)';
-            ctx.lineWidth = 6;
-            ctx.lineCap = 'round';
-            
-            const connections = [
-                [0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
-                [0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],
-                [0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]
-            ];
-            
-            connections.forEach(([i1, i2]) => {
-                ctx.beginPath();
-                ctx.moveTo(landmarks[i1].x * canvas.width, landmarks[i1].y * canvas.height);
-                ctx.lineTo(landmarks[i2].x * canvas.width, landmarks[i2].y * canvas.height);
-                ctx.stroke();
-            });
-            
-            ctx.fillStyle = 'rgba(255, 255, 255, 1)';
-            landmarks.forEach(landmark => {
-                ctx.shadowColor = '#00FF00';
-                ctx.shadowBlur = 15;
-                ctx.beginPath();
-                ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 10, 0, 2 * Math.PI);
-                ctx.fill();
-            });
-            ctx.shadowBlur = 0;
-        }
-
-        // 啟動
         initHands().then(loadPhotos);
         render();
     </script>
