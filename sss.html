@@ -9,3 +9,215 @@
       hello world
   </body>
 </html>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>鼠標手指指向網站</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <style>
+        body { font-family: Arial; text-align: center; margin: 0; background: #f0f0f0; }
+        #upload { margin: 20px; }
+        #canvas { border: 2px solid #333; cursor: crosshair; max-width: 90vw; max-height: 70vh; }
+        .controls { margin: 10px; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>鼠標指向手指互動</h1>
+    <div class="controls">
+        <input type="file" id="photoInput" accept="image/*" multiple>
+        <button id="clearPhotos">清除照片</button>
+    </div>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <p>鼠標移動試試看！上傳多張照片效果更好。</p>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const photoInput = document.getElementById('photoInput');
+        const clearBtn = document.getElementById('clearPhotos');
+        
+        let photos = []; // 儲存上傳的照片
+        let hands = null;
+        let mouseX = 0, mouseY = 0;
+        let targetLandmarks = null;
+
+        // 初始化 MediaPipe Hands
+        async function initHands() {
+            hands = new window.Hands({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }});
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 0,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.5
+            });
+            hands.onResults(onHandResults);
+        }
+
+        // 上傳照片處理
+        photoInput.onchange = (e) => {
+            Array.from(e.target.files).forEach(file => {
+                const img = new Image();
+                img.onload = () => {
+                    photos.push({img, originalLandmarks: null});
+                    processPhoto(img);
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        };
+
+        // 處理單張照片的手部偵測
+        async function processPhoto(img) {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            tempCtx.drawImage(img, 0, 0);
+            
+            const results = await hands.send({image: tempCanvas});
+            if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
+                photos[photos.length - 1].originalLandmarks = results.multiHandLandmarks[0];
+            }
+        }
+
+        // 手部偵測回調
+        function onHandResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
+                // 儲存原始手部關鍵點作為模板
+                photos.forEach((photo, index) => {
+                    if (!photo.originalLandmarks) photo.originalLandmarks = results.multiHandLandmarks[0];
+                });
+            }
+            render();
+        }
+
+        // 鼠標移動事件
+        canvas.onmousemove = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            render();
+        };
+
+        // 主要渲染函數
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (photos.length === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('請上傳有手指的照片', canvas.width/2, canvas.height/2);
+                return;
+            }
+
+            // 隨機選一張照片
+            const randomPhoto = photos[Math.floor(Math.random() * photos.length)];
+            if (!randomPhoto.img || !randomPhoto.originalLandmarks) return;
+
+            // 繪製照片（縮放到畫布大小）
+            const scaleX = canvas.width / randomPhoto.img.width;
+            const scaleY = canvas.height / randomPhoto.img.height;
+            const scale = Math.min(scaleX, scaleY);
+            const imgW = randomPhoto.img.width * scale;
+            const imgH = randomPhoto.img.height * scale;
+            const imgX = (canvas.width - imgW) / 2;
+            const imgY = (canvas.height - imgH) / 2;
+
+            ctx.drawImage(randomPhoto.img, imgX, imgY, imgW, imgH);
+
+            // 將鼠標位置轉換到照片座標系
+            const targetX = imgX + (mouseX / canvas.width) * imgW;
+            const targetY = imgY + (mouseY / canvas.height) * imgH;
+
+            // 計算指向鼠標的手指關鍵點
+            if (randomPhoto.originalLandmarks) {
+                const landmarks = adjustHandToPoint(randomPhoto.originalLandmarks, targetX, targetY, imgX, imgY, scale);
+                drawHandLandmarks(ctx, landmarks);
+                
+                // 繪製鼠標目標點
+                ctx.fillStyle = '#FF0000';
+                ctx.beginPath();
+                ctx.arc(targetX, targetY, 8, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        // 調整手部關鍵點指向目標位置
+        function adjustHandToPoint(originalLandmarks, targetX, targetY, imgX, imgY, scale) {
+            const adjusted = [];
+            
+            // 找到食指尖端 (landmark 8)
+            const fingerTip = originalLandmarks[8];
+            const origTipX = fingerTip.x * scale + imgX;
+            const origTipY = fingerTip.y * scale + imgY;
+            
+            // 計算旋轉角度
+            const angle = Math.atan2(targetY - origTipY, targetX - origTipX);
+            
+            // 旋轉和移動所有關鍵點
+            for (let landmark of originalLandmarks) {
+                const origX = landmark.x * scale + imgX;
+                const origY = landmark.y * scale + imgY;
+                
+                const cosA = Math.cos(angle);
+                const sinA = Math.sin(angle);
+                const dx = origX - origTipX;
+                const dy = origY - origTipY;
+                
+                const rotatedX = origTipX + dx * cosA - dy * sinA;
+                const rotatedY = origTipY + dx * sinA + dy * cosA;
+                
+                adjusted.push({
+                    x: (rotatedX - imgX) / scale,
+                    y: (rotatedY - imgY) / scale,
+                    z: landmark.z
+                });
+            }
+            return adjusted;
+        }
+
+        // 繪製手部關鍵點和連線
+        function drawHandLandmarks(ctx, landmarks) {
+            ctx.strokeStyle = '#00FF00';
+            ctx.lineWidth = 3;
+            
+            // MediaPipe 手部連線 (簡化版)
+            const connections = [
+                [0,1],[1,2],[2,3],[3,4],  // 拇指
+                [0,5],[5,6],[6,7],[7,8],  // 食指
+                [0,9],[9,10],[10,11],[11,12], // 中指
+                [0,13],[13,14],[14,15],[15,16], // 無名指
+                [0,17],[17,18],[18,19],[19,20], // 小指
+                [5,9],[9,13],[13,17] // 手掌
+            ];
+            
+            connections.forEach(([i1, i2]) => {
+                ctx.beginPath();
+                ctx.moveTo(landmarks[i1].x * canvas.width, landmarks[i2].y * canvas.height);
+                ctx.lineTo(landmarks[i2].x * canvas.width, landmarks[i2].y * canvas.height);
+                ctx.stroke();
+            });
+            
+            // 繪製關鍵點
+            ctx.fillStyle = '#FFFFFF';
+            landmarks.forEach(landmark => {
+                ctx.beginPath();
+                ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        clearBtn.onclick = () => {
+            photos = [];
+            render();
+        };
+
+        // 初始化
+        initHands();
+        render();
+    </script>
+</body>
+</html>
