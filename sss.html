@@ -13,7 +13,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>Hacker Terminal</title>
+<title>System Breach</title>
 
 <style>
 html, body {
@@ -25,14 +25,14 @@ html, body {
     font-family: monospace;
 }
 
-/* Matrix 背景 */
+/* ===== Matrix ===== */
 canvas {
     position: fixed;
     inset: 0;
     z-index: 0;
 }
 
-/* Terminal */
+/* ===== Terminal ===== */
 #terminal {
     position: relative;
     z-index: 1;
@@ -42,88 +42,72 @@ canvas {
     color: #00ff00;
 }
 
-/* 上方捲動區 */
 #buffer {
     flex: 1;
     padding: 20px;
     white-space: pre-wrap;
     overflow-y: auto;
     font-size: 16px;
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
-/* 底部輸入行 */
 #inputLine {
     padding: 10px 20px;
-    border-top: 1px solid #003300;
+    border-top: 1px solid #330000;
     background: rgba(0,0,0,0.85);
     font-size: 16px;
 }
 
-/* 紅光警報 */
+/* ===== 全畫面紅光 ===== */
 .alert {
-    animation: redflash 0.15s infinite alternate;
+    animation: redflash 0.08s infinite alternate;
 }
 @keyframes redflash {
-    from { background: black; }
-    to { background: #200000; }
+    from { background: #000; }
+    to   { background: #300000; }
 }
 
-/* 錯誤視窗 */
+/* ===== Error Window ===== */
 #error {
     position: fixed;
-    top: 22%;
+    top: 20%;
     left: 50%;
     transform: translateX(-50%);
-    width: 460px;
-    padding: 26px;
-    display: none;
+    width: 520px;
+    padding: 30px;
     z-index: 5;
-    background: rgba(0,0,0,0.95);
-    font-family: monospace;
+    display: none;
+    background: rgba(0,0,0,0.98);
+    border: 3px solid red;
+    color: red;
+    box-shadow: 0 0 120px red;
+    animation: shake 0.08s infinite alternate;
+}
+
+@keyframes shake {
+    from { transform: translateX(-50%) translateY(0); }
+    to   { transform: translateX(-48%) translateY(2px); }
 }
 
 #error h1 {
-    margin: 0 0 12px;
-    font-size: 20px;
-    letter-spacing: 2px;
+    margin: 0 0 16px;
+    font-size: 22px;
+    letter-spacing: 3px;
 }
 
 #error p {
     margin: 0;
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 15px;
+    line-height: 1.7;
 }
 
-/* 錯誤樣式 */
-.error-warning {
-    border: 2px solid #ffcc00;
-    color: #ffcc00;
-    box-shadow: 0 0 25px #ffcc00;
+/* ===== 致命閃爍 ===== */
+.fatal {
+    animation: fatalPulse 0.15s infinite alternate;
 }
-
-.error-critical {
-    border: 2px solid red;
-    color: red;
-    box-shadow: 0 0 40px red;
-}
-
-.error-notice {
-    border: 2px solid #00ffaa;
-    color: #00ffaa;
-    box-shadow: 0 0 25px #00ffaa;
-}
-
-.error-fatal {
-    border: 3px solid red;
-    color: red;
-    box-shadow: 0 0 80px red;
-    animation: fatalPulse 0.2s infinite alternate;
-}
-
 @keyframes fatalPulse {
-    from { box-shadow: 0 0 30px red; }
-    to { box-shadow: 0 0 100px red; }
+    from { box-shadow: 0 0 40px red; }
+    to   { box-shadow: 0 0 160px red; }
 }
 </style>
 </head>
@@ -139,7 +123,6 @@ canvas {
 
 <div id="error"></div>
 
-<!-- 簡單警報音（內嵌，不需外檔） -->
 <audio id="alarm" src="data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
 
 <script>
@@ -157,21 +140,21 @@ addEventListener("resize", resize);
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const fontSize = 14;
 let columns = Math.floor(canvas.width / fontSize);
-let drops = new Array(columns).fill(1);
+let drops = Array(columns).fill(1);
 
 setInterval(() => {
-    ctx.fillStyle = "rgba(0,0,0,0.08)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle = "#00ff00";
     ctx.font = fontSize + "px monospace";
 
-    drops.forEach((y, i) => {
-        const t = letters[Math.floor(Math.random() * letters.length)];
-        ctx.fillText(t, i * fontSize, y * fontSize);
-        if (y * fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
+    drops.forEach((y,i)=>{
+        const t = letters[Math.floor(Math.random()*letters.length)];
+        ctx.fillText(t, i*fontSize, y*fontSize);
+        if (y*fontSize > canvas.height && Math.random()>0.97) drops[i]=0;
         drops[i]++;
     });
-}, 50);
+}, 45);
 
 /* ===== Terminal Logic ===== */
 const buffer = document.getElementById("buffer");
@@ -180,60 +163,51 @@ const errorBox = document.getElementById("error");
 const alarm = document.getElementById("alarm");
 
 const tokens = [
-    "int","const","void","malloc","free","if","while","return",
-    "class","def","async","await","function","=>",
-    "syscall","fork()","exec()","ptrace","sudo","root",
-    "0xDEADBEEF","0xCAFEBABE","AES_256","RSA2048"
+    "int","void","const","malloc","free","while","return",
+    "syscall","fork()","exec()","ptrace",
+    "sudo","root","kernel",
+    "0xDEADBEEF","0xBADC0DE","AES256","RSA2048"
 ];
 
-const errorVariants = [
-    {
-        type: "error-warning",
-        title: "WARNING",
-        message: "Unusual memory activity detected\nAddress range unstable"
-    },
-    {
-        type: "error-critical",
-        title: "CRITICAL ERROR",
-        message: "KERNEL PANIC\nStack overflow in thread 0x3F2A"
-    },
-    {
-        type: "error-notice",
-        title: "SYSTEM NOTICE",
-        message: "Injected process PID 4032\nHook established successfully"
-    },
-    {
-        type: "error-fatal",
-        title: "INTRUSION DETECTED",
-        message: "UNAUTHORIZED ACCESS\nSYSTEM LOCKDOWN INITIATED"
-    }
+const errors = [
+    "MEMORY CORRUPTION DETECTED",
+    "STACK OVERFLOW",
+    "ILLEGAL INSTRUCTION",
+    "SEGMENTATION FAULT",
+    "KERNEL PANIC",
+    "UNAUTHORIZED ACCESS",
+    "SYSTEM INTEGRITY FAILURE",
+    "PROCESS TERMINATED"
 ];
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function indent(){return " ".repeat(rand(0,10));}
+function indent(){return " ".repeat(rand(0,12));}
 
 let tokenCount = 0;
-let maxTokens = rand(6,10);
+let maxTokens = rand(5,9);
 let keystrokes = 0;
 
-// 初始化
 buffer.textContent = indent();
 
-function showErrorAdvanced() {
-    const e = errorVariants[rand(0,errorVariants.length-1)];
-    errorBox.className = e.type;
-    errorBox.innerHTML = `<h1>${e.title}</h1><p>${e.message.replace(/\n/g,"<br>")}</p>`;
-    errorBox.style.display = "block";
+function showError() {
+    const title = "⚠ SYSTEM FAILURE ⚠";
+    const msg =
+        errors[rand(0,errors.length-1)] + "\n" +
+        "ADDRESS: 0x" + Math.random().toString(16).slice(2,10) + "\n" +
+        "EXECUTION HALTED";
 
-    if (e.type !== "error-notice") {
-        document.body.classList.add("alert");
-        alarm.play().catch(()=>{});
-    }
+    errorBox.innerHTML = `<h1>${title}</h1><p>${msg.replace(/\n/g,"<br>")}</p>`;
+    errorBox.style.display = "block";
+    errorBox.classList.toggle("fatal", Math.random() > 0.6);
+
+    document.body.classList.add("alert");
+    alarm.play().catch(()=>{});
 
     setTimeout(() => {
         errorBox.style.display = "none";
+        errorBox.classList.remove("fatal");
         document.body.classList.remove("alert");
-    }, e.type === "error-fatal" ? 3000 : 1800);
+    }, rand(1200,2500));
 }
 
 document.addEventListener("keydown", () => {
@@ -244,15 +218,16 @@ document.addEventListener("keydown", () => {
 
     if (tokenCount >= maxTokens) {
         buffer.textContent += inputLine.textContent + "\n";
-        if (Math.random() < 0.35) buffer.textContent += "\n";
+        if (Math.random() < 0.4) buffer.textContent += "\n";
         inputLine.textContent = "> " + indent();
         tokenCount = 0;
-        maxTokens = rand(6,10);
+        maxTokens = rand(5,9);
         buffer.scrollTop = buffer.scrollHeight;
     }
 
-    if (keystrokes % 8 === 0) {
-        showErrorAdvanced();
+    /* 失控邏輯：越打越容易爆 */
+    if (keystrokes > 10 && Math.random() < 0.25) {
+        showError();
     }
 });
 </script>
