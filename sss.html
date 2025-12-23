@@ -25,14 +25,14 @@ html,body{
     font-family:monospace;
 }
 
-/* ===== MATRIX ===== */
+/* MATRIX */
 canvas{
     position:fixed;
     inset:0;
     z-index:0;
 }
 
-/* ===== TERMINAL ===== */
+/* TERMINAL */
 #terminal{
     position:relative;
     z-index:1;
@@ -47,8 +47,6 @@ canvas{
     padding:20px;
     white-space:pre-wrap;
     overflow-y:auto;
-    font-size:16px;
-    line-height:1.6;
 }
 
 #inputLine{
@@ -57,38 +55,29 @@ canvas{
     background:rgba(0,0,0,0.9);
 }
 
-/* ===== RED ALERT ===== */
+/* RED ALERT */
 .alert{
     animation:redFlash 0.06s infinite alternate;
 }
 @keyframes redFlash{
     from{background:black;}
-    to{background:#400000;}
+    to{background:#500000;}
 }
 
-/* ===== ERROR WINDOWS ===== */
+/* ERROR BOX */
 .error{
     position:fixed;
-    left:50%;
-    top:20%;
-    transform:translateX(-50%);
-    width:520px;
-    padding:28px;
     border:3px solid red;
     color:red;
     background:rgba(0,0,0,0.97);
     box-shadow:0 0 120px red;
+    padding:26px;
+    width:520px;
     z-index:10;
-    animation:shake 0.08s infinite alternate;
-}
-
-@keyframes shake{
-    from{transform:translateX(-50%) translateY(0);}
-    to{transform:translateX(-49%) translateY(2px);}
 }
 
 .error h1{
-    margin:0 0 14px;
+    margin:0 0 12px;
     font-size:22px;
     letter-spacing:3px;
 }
@@ -96,16 +85,25 @@ canvas{
 .error p{
     margin:0;
     font-size:15px;
-    line-height:1.7;
+    line-height:1.6;
 }
 
-/* ===== CRT BROKEN EFFECT ===== */
+/* FULL RED */
+#redout{
+    position:fixed;
+    inset:0;
+    background:red;
+    display:none;
+    z-index:999;
+}
+
+/* STATIC */
 #static{
     position:fixed;
     inset:0;
     background:black;
     display:none;
-    z-index:999;
+    z-index:1000;
 }
 
 .static-line{
@@ -113,7 +111,7 @@ canvas{
     width:100%;
     height:2px;
     background:white;
-    opacity:0.15;
+    opacity:0.2;
     animation:staticMove 0.05s linear infinite;
 }
 
@@ -133,15 +131,15 @@ canvas{
     <div id="inputLine">&gt; </div>
 </div>
 
+<div id="redout"></div>
 <div id="static"></div>
 
 <audio id="alarm" src="data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
 
 <script>
-/* ===== MATRIX ===== */
+/* MATRIX */
 const canvas=document.getElementById("matrix");
 const ctx=canvas.getContext("2d");
-
 function resize(){
     canvas.width=innerWidth;
     canvas.height=innerHeight;
@@ -151,11 +149,10 @@ addEventListener("resize",resize);
 
 let fontSize=14;
 let letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-let columns, drops;
-
+let drops=[];
 function resetMatrix(){
-    columns=Math.floor(canvas.width/fontSize);
-    drops=Array(columns).fill(1);
+    const cols=Math.floor(canvas.width/fontSize);
+    drops=Array(cols).fill(1);
 }
 resetMatrix();
 
@@ -167,7 +164,6 @@ function drawMatrix(){
     ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle="#00ff00";
     ctx.font=fontSize+"px monospace";
-
     drops.forEach((y,i)=>{
         const t=letters[Math.floor(Math.random()*letters.length)];
         ctx.fillText(t,i*fontSize,y*fontSize);
@@ -176,24 +172,24 @@ function drawMatrix(){
     });
 }
 
-/* ===== TERMINAL ===== */
+/* TERMINAL */
 const buffer=document.getElementById("buffer");
 const inputLine=document.getElementById("inputLine");
 const alarm=document.getElementById("alarm");
+const redout=document.getElementById("redout");
 const staticScreen=document.getElementById("static");
 
 const tokens=[
- "int","void","const","malloc","free","while","return",
- "syscall","fork()","exec()","ptrace","kernel",
- "root","sudo","panic","0xDEADBEEF","0xBADC0DE"
+ "int","void","malloc","free","kernel","panic",
+ "syscall","fork()","exec()","root","sudo",
+ "0xDEADBEEF","0xBADC0DE"
 ];
 
-const fatalErrors=[
+const errors=[
  "KERNEL PANIC",
  "MEMORY CORRUPTION",
  "STACK OVERFLOW",
  "SEGMENTATION FAULT",
- "ILLEGAL INSTRUCTION",
  "SYSTEM INTEGRITY LOST",
  "UNAUTHORIZED ACCESS"
 ];
@@ -205,45 +201,39 @@ let tokenCount=0;
 let maxTokens=rand(4,8);
 let keystrokes=0;
 let errorCount=0;
-let apocalypse=false;
+let phase=0; // 0正常 1警告 2紅爆 3雜訊
 
 buffer.textContent=indent();
 
-/* ===== ERROR SPAWN ===== */
 function spawnError(){
     const box=document.createElement("div");
     box.className="error";
-    box.style.top=rand(5,80)+"%";
-    box.style.left=rand(10,80)+"%";
-    box.style.transform="translate(-50%,-50%)";
+    box.style.top=rand(0,80)+"%";
+    box.style.left=rand(0,70)+"%";
     box.innerHTML=
         `<h1>⚠ SYSTEM FAILURE ⚠</h1>
-         <p>${fatalErrors[rand(0,fatalErrors.length-1)]}<br>
-         ADDRESS: 0x${Math.random().toString(16).slice(2,10)}<br>
-         EXECUTION ABORTED</p>`;
+         <p>${errors[rand(0,errors.length-1)]}<br>
+         ADDRESS: 0x${Math.random().toString(16).slice(2,10)}</p>`;
     document.body.appendChild(box);
-
     document.body.classList.add("alert");
     alarm.play().catch(()=>{});
-
-    setTimeout(()=>box.remove(),rand(2000,3500));
 }
 
-/* ===== FINAL STATIC ===== */
+/* FINAL STATIC */
 function triggerStatic(){
     staticScreen.style.display="block";
-    for(let i=0;i<120;i++){
-        const line=document.createElement("div");
-        line.className="static-line";
-        line.style.top=rand(0,innerHeight)+"px";
-        line.style.opacity=Math.random()*0.4;
-        staticScreen.appendChild(line);
+    for(let i=0;i<140;i++){
+        const l=document.createElement("div");
+        l.className="static-line";
+        l.style.top=rand(0,innerHeight)+"px";
+        l.style.opacity=Math.random()*0.4;
+        staticScreen.appendChild(l);
     }
 }
 
-/* ===== INPUT ===== */
+/* INPUT */
 document.addEventListener("keydown",()=>{
-    if(apocalypse) return;
+    if(phase>=3) return;
 
     const token=tokens[rand(0,tokens.length-1)];
     inputLine.textContent+=token+" ";
@@ -252,32 +242,32 @@ document.addEventListener("keydown",()=>{
 
     if(tokenCount>=maxTokens){
         buffer.textContent+=inputLine.textContent+"\n";
-        if(Math.random()<0.5) buffer.textContent+="\n";
+        if(Math.random()<0.4) buffer.textContent+="\n";
         inputLine.textContent="> "+indent();
         tokenCount=0;
         maxTokens=rand(4,8);
         buffer.scrollTop=buffer.scrollHeight;
     }
 
-    /* 漸進式失控 */
-    if(Math.random()<0.25){
+    /* 警告延遲 */
+    if(keystrokes>12 && Math.random()<0.25){
         spawnError();
         errorCount++;
     }
 
-    if(errorCount>8){
-        clearInterval(matrixInterval);
-        matrixSpeed=Math.max(20,matrixSpeed-3);
-        matrixInterval=setInterval(drawMatrix,matrixSpeed);
+    /* 最終紅爆 */
+    if(errorCount>20 && phase===1){
+        phase=2;
+        redout.style.display="block";
+        setTimeout(()=>{
+            redout.style.display="none";
+            phase=3;
+            clearInterval(matrixInterval);
+            triggerStatic();
+        },1500);
     }
 
-    /* 世界結局 */
-    if(errorCount>30){
-        apocalypse=true;
-        clearInterval(matrixInterval);
-        document.body.classList.remove("alert");
-        triggerStatic();
-    }
+    if(errorCount>0) phase=1;
 });
 </script>
 
