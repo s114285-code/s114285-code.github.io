@@ -14,95 +14,98 @@
 <head>
 <meta charset="UTF-8">
 <title>Hacker Terminal</title>
+
 <style>
-    html, body {
-        margin: 0;
-        padding: 0;
-        background: black;
-        color: #00ff00;
-        font-family: "Courier New", monospace;
-        height: 100%;
-        overflow: hidden;
-    }
+html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    color: #00ff00;
+    font-family: "Courier New", monospace;
+    height: 100%;
+    overflow: hidden;
+}
 
-    #terminal {
-        padding: 20px;
-        white-space: pre-wrap;
-        font-size: 16px;
-        line-height: 1.4;
-        animation: flicker 0.15s infinite alternate;
-    }
+#terminal {
+    padding: 20px;
+    white-space: pre-wrap;
+    font-size: 16px;
+    line-height: 1.4;
+}
 
-    @keyframes flicker {
-        from { opacity: 0.95; }
-        to { opacity: 1; }
-    }
+.cursor {
+    display: inline-block;
+    width: 10px;
+    background: #00ff00;
+    animation: blink 1s steps(2) infinite;
+}
 
-    .cursor {
-        display: inline-block;
-        width: 10px;
-        background: #00ff00;
-        animation: blink 1s steps(2) infinite;
-    }
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+}
 
-    @keyframes blink {
-        0% { opacity: 1; }
-        50% { opacity: 0; }
-    }
+/* 當機抖動 */
+.glitch {
+    animation: glitch 0.08s infinite;
+}
 
-    /* 當機抖動 */
-    .glitch {
-        animation: glitch 0.1s infinite;
-    }
-
-    @keyframes glitch {
-        0% { transform: translate(0,0); }
-        25% { transform: translate(-1px,1px); }
-        50% { transform: translate(1px,-1px); }
-        75% { transform: translate(-1px,-1px); }
-        100% { transform: translate(1px,1px); }
-    }
+@keyframes glitch {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(-1px,1px); }
+    50% { transform: translate(1px,-1px); }
+    75% { transform: translate(-1px,-1px); }
+    100% { transform: translate(1px,1px); }
+}
 </style>
 </head>
+
 <body>
 
-<div id="terminal">
-> SYSTEM BOOTING...
-> ACCESS GRANTED
-> TYPE ANYTHING...
-<span class="cursor">&nbsp;</span>
-</div>
+<div id="terminal"></div>
 
 <script>
 const terminal = document.getElementById("terminal");
 
 const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/";
 
-function randomCode(length) {
-    let result = "";
-    for (let i = 0; i < length; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+let lineLength = 0;
+let maxLineLength = randomLineLength();
+
+// 初始空格
+terminal.textContent = randomIndent();
+
+function randomChar() {
+    return chars[Math.floor(Math.random() * chars.length)];
 }
 
-document.addEventListener("keydown", (e) => {
-    // 每敲一次鍵，就生成亂碼
-    const lines = Math.floor(Math.random() * 3) + 1;
+function randomIndent() {
+    const spaces = Math.floor(Math.random() * 12);
+    return " ".repeat(spaces);
+}
 
-    for (let i = 0; i < lines; i++) {
-        const len = Math.floor(Math.random() * 40) + 20;
-        terminal.innerHTML += "\n> " + randomCode(len);
+function randomLineLength() {
+    return Math.floor(Math.random() * 30) + 20;
+}
+
+document.addEventListener("keydown", () => {
+    terminal.textContent += randomChar();
+    lineLength++;
+
+    // 到行尾就換行
+    if (lineLength >= maxLineLength) {
+        terminal.textContent += "\n" + randomIndent();
+        lineLength = 0;
+        maxLineLength = randomLineLength();
     }
 
+    // 當機感
     terminal.classList.add("glitch");
-    setTimeout(() => terminal.classList.remove("glitch"), 100);
+    setTimeout(() => terminal.classList.remove("glitch"), 60);
 
-    // 自動捲動到底
     window.scrollTo(0, document.body.scrollHeight);
 });
 </script>
 
 </body>
 </html>
-
