@@ -26,32 +26,28 @@ html, body {
     overflow: hidden;
 }
 
+/* Matrix 背景 */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+
+/* Terminal */
 #terminal {
+    position: relative;
+    z-index: 1;
     padding: 20px;
     white-space: pre-wrap;
     font-size: 16px;
     line-height: 1.5;
 }
 
-/* 游標 */
-.cursor {
-    display: inline-block;
-    width: 10px;
-    background: #00ff00;
-    margin-left: 2px;
-    animation: blink 1s steps(2) infinite;
-}
-
-@keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: 0; }
-}
-
-/* glitch 抖動 */
+/* glitch */
 .glitch {
-    animation: glitch 0.07s infinite;
+    animation: glitch 0.08s infinite;
 }
-
 @keyframes glitch {
     0% { transform: translate(0,0); }
     25% { transform: translate(-1px,1px); }
@@ -59,86 +55,58 @@ html, body {
     75% { transform: translate(-1px,-1px); }
     100% { transform: translate(1px,1px); }
 }
+
+/* Error popup */
+#error {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.9);
+    border: 1px solid #00ff00;
+    padding: 10px 14px;
+    font-size: 14px;
+    display: none;
+    z-index: 2;
+}
 </style>
 </head>
 
 <body>
 
+<canvas id="matrix"></canvas>
 <div id="terminal"></div>
+<div id="error"></div>
 
 <script>
-const terminal = document.getElementById("terminal");
+/* ===== Matrix Rain ===== */
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
 
-// 程式語言 token 池
-const tokens = [
-    // C / C++
-    "int", "char", "void", "static", "const", "sizeof", "malloc",
-    "free", "uint32_t", "printf", "scanf", "struct", "typedef",
-    "nullptr", "std::vector", "std::map", "std::string",
-    "template", "inline", "namespace",
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-    // 控制流程
-    "if", "else", "for", "while", "do", "switch", "case",
-    "break", "continue", "return", "goto", "throw", "try", "catch",
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const fontSize = 14;
+const columns = canvas.width / fontSize;
+const drops = Array.from({length: columns}).fill(1);
 
-    // Python / JS
-    "def", "class", "lambda", "async", "await", "import", "from",
-    "yield", "with", "this", "function", "=>", "let", "var", "const",
+function drawMatrix() {
+    ctx.fillStyle = "rgba(0,0,0,0.05)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 系統 / 駭客感
-    "syscall", "fork()", "exec()", "ptrace", "chmod", "chown",
-    "/proc/self/mem", "SIGSEGV", "SIGKILL", "root", "sudo",
+    ctx.fillStyle = "#00ff00";
+    ctx.font = fontSize + "px monospace";
 
-    // 網路 / 安全
-    "socket()", "bind()", "listen()", "accept()", "connect()",
-    "0xDEADBEEF", "0xCAFEBABE", "SHA256", "AES_256", "RSA2048"
-];
-
-let lineLength = 0;
-let maxLineLength = randomLineLength();
-
-// 初始化一行（隨機縮排）
-terminal.textContent = randomIndent();
-
-function randomToken() {
-    return tokens[Math.floor(Math.random() * tokens.length)];
+    drops.forEach((y, i) => {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, y * fontSize);
+        if (y * fontSize > canvas.height && Math.random() > 0.975) {
+            drops[i] = 0;
+        }
+        drops[i]++;
+    });
 }
+setInterval(drawMatrix, 50);
 
-function randomIndent() {
-    return " ".repeat(Math.floor(Math.random() * 10));
-}
+/* ===== Termina*
 
-function randomLineLength() {
-    return Math.floor(Math.random() * 5) + 6; // 一行幾個 token
-}
-
-function newLine() {
-    terminal.textContent += "\n" + randomIndent();
-    lineLength = 0;
-    maxLineLength = randomLineLength();
-}
-
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        newLine();
-        return;
-    }
-
-    // 一鍵一 token
-    terminal.textContent += randomToken() + " ";
-    lineLength++;
-
-    if (lineLength >= maxLineLength) {
-        newLine();
-    }
-
-    // glitch
-    terminal.classList.add("glitch");
-    setTimeout(() => terminal.classList.remove("glitch"), 60);
-
-    window.scrollTo(0, document.body.scrollHeight);
-});
-</script>
-
-</body>
-</html>
