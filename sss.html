@@ -12,176 +12,184 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>軟糬女孩</title>
+    <!DOCTYPE html>
+<html>
+<head>
+    <title>女孩</title>
     <style>
-        body { margin: 0; background: #f0e8d9; overflow: hidden; font-family: Arial; }
+        body { margin: 0; background: linear-gradient(#f8d7ff, #e8c4ff); overflow: hidden; }
         canvas { display: block; cursor: none; }
-        #info { position: absolute; top: 10px; left: 10px; color: #666; font-size: 14px; }
+        #info { position: absolute; top: 10px; left: 10px; color: #ff69b4; font-family: 'Comic Sans MS'; font-size: 16px; }
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
-    <div id="info">滑鼠控制眼睛 • 點擊戳她 • 拖拉拉扯 • 她會自動回復</div>
+    <div id="info">✨ 戳戳她～拉拉她～眼睛會跟著你哦！ ✨</div>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // 粒子系統 (臉部約 20x20 網格)
+        // 載入卡通女孩圖像
+        const img = new Image();
+        img.src = 'mochi_girl_face.png';  // 放您下載的圖像
+        img.onload = () => { ready = true; };
+
+        let ready = false;
+        const particles = [];
+        const cols = 30, rows = 40;  // 更高解析度
+        const faceW = 350, faceH = 450;
+        const cx = canvas.width / 2, cy = canvas.height / 2 + 50;
+
+        // 粒子網格 (卡通圓臉形狀)
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const ratioX = (x / (cols - 1)) - 0.5;
+                const ratioY = (y / (rows - 1)) - 0.5;
+                // 卡通大頭形狀：下巴圓潤
+                const faceX = ratioX * (1 - Math.abs(ratioY) * 0.4) * (faceW / cols);
+                const faceY = ratioY * (1 + Math.abs(ratioX) * 0.3) * (faceH / rows);
+                particles.push(new Particle(cx + faceX, cy + faceY));
+            }
+        }
+
+        // Particle 類別 (不變，但增加紋理座標)
         class Particle {
             constructor(x, y) {
-                this.originalX = x;
-                this.originalY = y;
-                this.x = x;
-                this.y = y;
-                this.vx = 0;
-                this.vy = 0;
+                this.originalX = x; this.originalY = y;
+                this.x = x; this.y = y;
+                this.vx = 0; this.vy = 0;
                 this.pin = false;
+                this.u = (x - cx + faceW/2) / faceW;  // 紋理U座標
+                this.v = (y - cy + faceH/2) / faceH;  // 紋理V座標
             }
             update() {
                 if (!this.pin) {
-                    this.vx *= 0.9; // 阻尼
-                    this.vy *= 0.9;
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    // 回復力 (超軟糬效果)
-                    const dx = this.originalX - this.x;
-                    const dy = this.originalY - this.y;
-                    this.vx += dx * 0.05;
-                    this.vy += dy * 0.05;
+                    this.vx *= 0.92; this.vy *= 0.92;
+                    this.x += this.vx; this.y += this.vy;
+                    const dx = this.originalX - this.x; const dy = this.originalY - this.y;
+                    this.vx += dx * 0.08;  // 更Q彈回復
+                    this.vy += dy * 0.08;
                 }
             }
         }
 
-        // 建立臉部粒子網格 (中心位置)
-        const particles = [];
-        const cols = 25, rows = 25;
-        const faceW = 300, faceH = 400;
-        const cx = canvas.width / 2, cy = canvas.height / 2;
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < cols; x++) {
-                const px = cx + (x - cols/2) * (faceW/cols) * 0.8;
-                const py = cy + (y - rows/2) * (faceH/rows) * 1.2;
-                // 臉型：邊緣向內收
-                const faceX = (x/cols - 0.5) * (1 - Math.pow(y/rows - 0.5, 2) * 0.3);
-                const faceY = (y/rows - 0.5) * (1 + Math.abs(x/cols - 0.5) * 0.2);
-                particles.push(new Particle(px + faceX * 50, py + faceY * 40));
-            }
-        }
+        // 滑鼠變數
+        let mouseX = cx, mouseY = cy, mousePressed = false, isDragging = false;
 
-        // 滑鼠互動
-        let mouseX = 0, mouseY = 0, isDragging = false, mousePressed = false;
-        canvas.addEventListener('mousemove', e => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-        canvas.addEventListener('mousedown', () => { mousePressed = true; });
+        canvas.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+        canvas.addEventListener('mousedown', () => mousePressed = true);
         canvas.addEventListener('mouseup', () => { mousePressed = false; isDragging = false; });
-        canvas.addEventListener('mouseleave', () => { mousePressed = false; });
 
-        // 繪製函數
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 更新所有粒子
+            if (!ready) { requestAnimationFrame(draw); return; }
+
             particles.forEach(p => p.update());
 
-            // 滑鼠戳/拖互動 (最近粒子)
-            let closest = particles[0];
-            let minDist = 999;
+            // 滑鼠互動 (戳+波紋)
+            let closest = particles[0], minDist = 999;
             particles.forEach(p => {
                 const dist = Math.hypot(p.x - mouseX, p.y - mouseY);
-                if (dist < minDist && dist < 80) {
-                    minDist = dist;
-                    closest = p;
-                }
+                if (dist < minDist && dist < 60) { minDist = dist; closest = p; }
             });
 
             if (mousePressed) {
                 closest.pin = true;
-                closest.x = mouseX;
-                closest.y = mouseY;
-                isDragging = true;
-                // 戳擊波紋效果
+                closest.x += (mouseX - closest.x) * 0.3;
+                closest.y += (mouseY - closest.y) * 0.3;
+                isDragging = minDist < 60;
+                // 戳擊漣漪
                 particles.forEach(p => {
                     const dist = Math.hypot(p.x - mouseX, p.y - mouseY);
-                    if (dist < 100) {
-                        p.vx += (mouseX - p.x) * 0.3 / dist;
-                        p.vy += (mouseY - p.y) * 0.3 / dist;
+                    if (dist < 120 && dist > 10) {
+                        const force = (1 - dist / 120) * 0.4;
+                        p.vx += Math.cos(dist) * force;
+                        p.vy += Math.sin(dist) * force;
                     }
                 });
             } else {
                 closest.pin = false;
             }
 
-            // 繪製臉部 (漸變半透明網格)
+            // 繪製變形臉部 (紋理貼圖)
             ctx.save();
-            ctx.strokeStyle = 'rgba(255,220,180,0.8)';
-            ctx.lineWidth = 2;
-            ctx.lineJoin = 'round';
-            ctx.shadowColor = '#ffcc99';
-            ctx.shadowBlur = 20;
+            ctx.imageSmoothingEnabled = true;
             for (let y = 0; y < rows - 1; y++) {
                 for (let x = 0; x < cols - 1; x++) {
-                    const p1 = particles[y * cols + x];
-                    const p2 = particles[y * cols + x + 1];
-                    const p3 = particles[(y + 1) * cols + x];
-                    const p4 = particles[(y + 1) * cols + x + 1];
+                    const i1 = y * cols + x, i2 = i1 + 1, i3 = (y + 1) * cols + x, i4 = i3 + 1;
+                    const p1 = particles[i1], p2 = particles[i2], p3 = particles[i3], p4 = particles[i4];
                     
+                    ctx.save();
                     ctx.beginPath();
-                    ctx.moveTo(p1.x, p1.y);
-                    ctx.lineTo(p2.x, p2.y);
-                    ctx.lineTo(p4.x, p4.y);
-                    ctx.lineTo(p3.x, p3.y);
-                    ctx.closePath();
+                    ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+                    ctx.lineTo(p4.x, p4.y); ctx.lineTo(p3.x, p3.y); ctx.closePath();
+                    ctx.clip();
+                    
+                    // 貼圖變形
+                    const srcW = img.width / cols, srcH = img.height / rows;
+                    ctx.drawImage(img, 
+                        x * srcW, y * srcH, srcW, srcH,
+                        Math.min(p1.x, p2.x, p3.x, p4.x), Math.min(p1.y, p2.y, p3.y, p4.y),
+                        Math.abs(p2.x - p1.x) + Math.abs(p4.x - p3.x), 
+                        Math.abs(p3.y - p1.y) + Math.abs(p4.y - p2.y)
+                    );
+                    ctx.restore();
+                    
+                    // 柔光邊緣
+                    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                    ctx.lineWidth = 1;
                     ctx.stroke();
                 }
             }
             ctx.restore();
 
-            // 繪製眼睛 (隨滑鼠移動)
-            const eyeSize = 25;
-            const eyeLX = cx - 60 + (mouseX - cx) * 0.3;
-            const eyeLY = cy - 50 + (mouseY - cy) * 0.3;
-            const eyeRX = cx + 40 + (mouseX - cx) * 0.3;
-            const eyeRY = cy - 50 + (mouseY - cy) * 0.3;
-            
-            ctx.fillStyle = '#fff';
-            ctx.shadowColor = '#000';
-            ctx.shadowBlur = 10;
-            ctx.beginPath();
-            ctx.arc(eyeLX, eyeLY, eyeSize, 0, Math.PI * 2);
-            ctx.arc(eyeRX, eyeRY, eyeSize, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = '#333';
-            ctx.shadowBlur = 0;
-            const pupilLX = eyeLX + (mouseX - eyeLX) * 0.4;
-            const pupilLY = eyeLY + (mouseY - eyeLY) * 0.4;
-            const pupilRX = eyeRX + (mouseX - eyeRX) * 0.4;
-            const pupilRY = eyeRY + (mouseY - eyeRY) * 0.4;
-            ctx.beginPath();
-            ctx.arc(pupilLX, pupilLY, 12, 0, Math.PI * 2);
-            ctx.arc(pupilRX, pupilRY, 12, 0, Math.PI * 2);
-            ctx.fill();
+            // 動態大眼睛 (卡通閃亮)
+            const eyeOffsetX = (mouseX - cx) * 0.25;
+            const eyeOffsetY = (mouseY - cy) * 0.25;
+            const eyeLX = cx - 70 + eyeOffsetX, eyeLY = cy - 80 + eyeOffsetY;
+            const eyeRX = cx + 50 + eyeOffsetX, eyeRY = cy - 80 + eyeOffsetY;
 
-            // 滑鼠提示
+            // 眼白
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.arc(eyeLX, eyeLY, 35, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(eyeRX, eyeRY, 35, 0, Math.PI*2); ctx.fill();
+
+            // 閃亮瞳孔
+            const px1 = eyeLX + (mouseX - eyeLX) * 0.5;
+            const py1 = eyeLY + (mouseY - eyeLY) * 0.5;
+            const px2 = eyeRX + (mouseX - eyeRX) * 0.5;
+            const py2 = eyeRY + (mouseY - eyeRY) * 0.5;
+            
+            const gradient1 = ctx.createRadialGradient(px1-10, py1-10, 0, px1, py1, 20);
+            gradient1.addColorStop(0, '#4fc3f7'); gradient1.addColorStop(1, '#0288d1');
+            ctx.fillStyle = gradient1;
+            ctx.beginPath(); ctx.arc(px1, py1, 20, 0, Math.PI*2); ctx.fill();
+
+            ctx.fillStyle = gradient1;
+            ctx.beginPath(); ctx.arc(px2, py2, 20, 0, Math.PI*2); ctx.fill();
+
+            // 反光點
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.beginPath(); ctx.arc(px1-8, py1-8, 6, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(px2-8, py2-8, 6, 0, Math.PI*2); ctx.fill();
+
+            // 拖拉特效
             if (isDragging) {
-                ctx.fillStyle = 'rgba(255,100,100,0.3)';
-                ctx.beginPath();
-                ctx.arc(mouseX, mouseY, 15, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillStyle = 'rgba(255,182,193,0.4)';
+                ctx.shadowColor = '#ff69b4'; ctx.shadowBlur = 20;
+                ctx.beginPath(); ctx.arc(mouseX, mouseY, 25, 0, Math.PI*2); ctx.fill();
             }
 
             requestAnimationFrame(draw);
         }
 
         window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         });
-
         draw();
     </script>
 </body>
