@@ -39,7 +39,7 @@ canvas{
     height:100vh;
     display:flex;
     flex-direction:column;
-    color:#00ff00;
+    color:#00ff66;
 }
 
 #buffer{
@@ -47,12 +47,37 @@ canvas{
     padding:20px;
     white-space:pre-wrap;
     overflow-y:auto;
+    font-size:18px;
+    line-height:1.7;
+    text-shadow:
+        0 0 2px rgba(0,255,100,0.6),
+        0 0 6px rgba(0,255,100,0.3);
 }
 
 #inputLine{
     padding:10px 20px;
+    font-size:20px;
     border-top:1px solid #400000;
     background:rgba(0,0,0,0.9);
+    text-shadow:
+        0 0 3px rgba(0,255,100,0.8),
+        0 0 8px rgba(0,255,100,0.4);
+}
+
+/* CRT SCANLINES */
+#crt{
+    pointer-events:none;
+    position:fixed;
+    inset:0;
+    z-index:998;
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            rgba(0,0,0,0) 0px,
+            rgba(0,0,0,0) 2px,
+            rgba(0,0,0,0.15) 3px
+        );
+    mix-blend-mode:overlay;
 }
 
 /* RED ALERT */
@@ -88,7 +113,18 @@ canvas{
     line-height:1.6;
 }
 
-/* FULL RED */
+/* GLITCH TEXT */
+.glitch{
+    animation:glitch 0.12s infinite;
+}
+@keyframes glitch{
+    0%{transform:translate(0);filter:blur(0);}
+    40%{transform:translate(-1px,1px);filter:blur(0.5px);}
+    70%{transform:translate(1px,-1px);filter:blur(1px);}
+    100%{transform:translate(0);filter:blur(0.3px);}
+}
+
+/* REDOUT */
 #redout{
     position:fixed;
     inset:0;
@@ -105,7 +141,6 @@ canvas{
     display:none;
     z-index:1000;
 }
-
 .static-line{
     position:absolute;
     width:100%;
@@ -114,7 +149,6 @@ canvas{
     opacity:0.2;
     animation:staticMove 0.05s linear infinite;
 }
-
 @keyframes staticMove{
     from{transform:translateY(0);}
     to{transform:translateY(100vh);}
@@ -131,6 +165,7 @@ canvas{
     <div id="inputLine">&gt; </div>
 </div>
 
+<div id="crt"></div>
 <div id="redout"></div>
 <div id="static"></div>
 
@@ -147,9 +182,8 @@ function resize(){
 resize();
 addEventListener("resize",resize);
 
-let fontSize=14;
-let letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-let drops=[];
+const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+let fontSize=14, drops=[];
 function resetMatrix(){
     const cols=Math.floor(canvas.width/fontSize);
     drops=Array(cols).fill(1);
@@ -157,12 +191,12 @@ function resetMatrix(){
 resetMatrix();
 
 let matrixSpeed=45;
-let matrixInterval=setInterval(drawMatrix,matrixSpeed);
+let matrixTimer=setInterval(drawMatrix,matrixSpeed);
 
 function drawMatrix(){
     ctx.fillStyle="rgba(0,0,0,0.18)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="#00ff00";
+    ctx.fillStyle="#00ff66";
     ctx.font=fontSize+"px monospace";
     drops.forEach((y,i)=>{
         const t=letters[Math.floor(Math.random()*letters.length)];
@@ -172,7 +206,7 @@ function drawMatrix(){
     });
 }
 
-/* TERMINAL */
+/* TERMINAL LOGIC */
 const buffer=document.getElementById("buffer");
 const inputLine=document.getElementById("inputLine");
 const alarm=document.getElementById("alarm");
@@ -184,45 +218,36 @@ const tokens=[
  "syscall","fork()","exec()","root","sudo",
  "0xDEADBEEF","0xBADC0DE"
 ];
-
 const errors=[
- "KERNEL PANIC",
- "MEMORY CORRUPTION",
- "STACK OVERFLOW",
- "SEGMENTATION FAULT",
- "SYSTEM INTEGRITY LOST",
- "UNAUTHORIZED ACCESS"
+ "KERNEL PANIC","MEMORY CORRUPTION","STACK OVERFLOW",
+ "SEGMENTATION FAULT","SYSTEM INTEGRITY LOST","UNAUTHORIZED ACCESS"
 ];
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function indent(){return" ".repeat(rand(0,14));}
 
-let tokenCount=0;
-let maxTokens=rand(4,8);
-let keystrokes=0;
-let errorCount=0;
-let phase=0; // 0正常 1警告 2紅爆 3雜訊
+let tokenCount=0,maxTokens=rand(4,8);
+let keystrokes=0,errorCount=0,phase=0;
 
 buffer.textContent=indent();
 
 function spawnError(){
-    const box=document.createElement("div");
-    box.className="error";
-    box.style.top=rand(0,80)+"%";
-    box.style.left=rand(0,70)+"%";
-    box.innerHTML=
+    const e=document.createElement("div");
+    e.className="error";
+    e.style.top=rand(0,80)+"%";
+    e.style.left=rand(0,70)+"%";
+    e.innerHTML=
         `<h1>⚠ SYSTEM FAILURE ⚠</h1>
          <p>${errors[rand(0,errors.length-1)]}<br>
          ADDRESS: 0x${Math.random().toString(16).slice(2,10)}</p>`;
-    document.body.appendChild(box);
+    document.body.appendChild(e);
     document.body.classList.add("alert");
     alarm.play().catch(()=>{});
 }
 
-/* FINAL STATIC */
 function triggerStatic(){
     staticScreen.style.display="block";
-    for(let i=0;i<140;i++){
+    for(let i=0;i<160;i++){
         const l=document.createElement("div");
         l.className="static-line";
         l.style.top=rand(0,innerHeight)+"px";
@@ -231,14 +256,12 @@ function triggerStatic(){
     }
 }
 
-/* INPUT */
 document.addEventListener("keydown",()=>{
     if(phase>=3) return;
 
     const token=tokens[rand(0,tokens.length-1)];
     inputLine.textContent+=token+" ";
-    tokenCount++;
-    keystrokes++;
+    tokenCount++; keystrokes++;
 
     if(tokenCount>=maxTokens){
         buffer.textContent+=inputLine.textContent+"\n";
@@ -249,20 +272,24 @@ document.addEventListener("keydown",()=>{
         buffer.scrollTop=buffer.scrollHeight;
     }
 
-    /* 警告延遲 */
     if(keystrokes>12 && Math.random()<0.25){
         spawnError();
         errorCount++;
     }
 
-    /* 最終紅爆 */
-    if(errorCount>20 && phase===1){
+    if(errorCount>15){
+        buffer.classList.add("glitch");
+        inputLine.classList.add("glitch");
+        buffer.style.fontSize="20px";
+    }
+
+    if(errorCount>25 && phase===1){
         phase=2;
         redout.style.display="block";
         setTimeout(()=>{
             redout.style.display="none";
             phase=3;
-            clearInterval(matrixInterval);
+            clearInterval(matrixTimer);
             triggerStatic();
         },1500);
     }
