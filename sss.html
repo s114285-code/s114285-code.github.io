@@ -79,5 +79,66 @@ const tokens = [
 
     // 控制流程
     "if", "else", "for", "while", "do", "switch", "case",
-    "break", "continue", "return", "goto
+    "break", "continue", "return", "goto", "throw", "try", "catch",
 
+    // Python / JS
+    "def", "class", "lambda", "async", "await", "import", "from",
+    "yield", "with", "this", "function", "=>", "let", "var", "const",
+
+    // 系統 / 駭客感
+    "syscall", "fork()", "exec()", "ptrace", "chmod", "chown",
+    "/proc/self/mem", "SIGSEGV", "SIGKILL", "root", "sudo",
+
+    // 網路 / 安全
+    "socket()", "bind()", "listen()", "accept()", "connect()",
+    "0xDEADBEEF", "0xCAFEBABE", "SHA256", "AES_256", "RSA2048"
+];
+
+let lineLength = 0;
+let maxLineLength = randomLineLength();
+
+// 初始化一行（隨機縮排）
+terminal.textContent = randomIndent();
+
+function randomToken() {
+    return tokens[Math.floor(Math.random() * tokens.length)];
+}
+
+function randomIndent() {
+    return " ".repeat(Math.floor(Math.random() * 10));
+}
+
+function randomLineLength() {
+    return Math.floor(Math.random() * 5) + 6; // 一行幾個 token
+}
+
+function newLine() {
+    terminal.textContent += "\n" + randomIndent();
+    lineLength = 0;
+    maxLineLength = randomLineLength();
+}
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        newLine();
+        return;
+    }
+
+    // 一鍵一 token
+    terminal.textContent += randomToken() + " ";
+    lineLength++;
+
+    if (lineLength >= maxLineLength) {
+        newLine();
+    }
+
+    // glitch
+    terminal.classList.add("glitch");
+    setTimeout(() => terminal.classList.remove("glitch"), 60);
+
+    window.scrollTo(0, document.body.scrollHeight);
+});
+</script>
+
+</body>
+</html>
