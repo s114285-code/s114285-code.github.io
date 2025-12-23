@@ -13,7 +13,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>Hacker Terminal</title>
+<title>HACKER TERMINAL</title>
 
 <style>
 html, body {
@@ -30,13 +30,15 @@ html, body {
     padding: 20px;
     white-space: pre-wrap;
     font-size: 16px;
-    line-height: 1.4;
+    line-height: 1.5;
 }
 
+/* 游標 */
 .cursor {
     display: inline-block;
     width: 10px;
     background: #00ff00;
+    margin-left: 2px;
     animation: blink 1s steps(2) infinite;
 }
 
@@ -45,9 +47,9 @@ html, body {
     50% { opacity: 0; }
 }
 
-/* 當機抖動 */
+/* glitch 抖動 */
 .glitch {
-    animation: glitch 0.08s infinite;
+    animation: glitch 0.07s infinite;
 }
 
 @keyframes glitch {
@@ -67,45 +69,15 @@ html, body {
 <script>
 const terminal = document.getElementById("terminal");
 
-const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/";
+// 程式語言 token 池
+const tokens = [
+    // C / C++
+    "int", "char", "void", "static", "const", "sizeof", "malloc",
+    "free", "uint32_t", "printf", "scanf", "struct", "typedef",
+    "nullptr", "std::vector", "std::map", "std::string",
+    "template", "inline", "namespace",
 
-let lineLength = 0;
-let maxLineLength = randomLineLength();
+    // 控制流程
+    "if", "else", "for", "while", "do", "switch", "case",
+    "break", "continue", "return", "goto
 
-// 初始空格
-terminal.textContent = randomIndent();
-
-function randomChar() {
-    return chars[Math.floor(Math.random() * chars.length)];
-}
-
-function randomIndent() {
-    const spaces = Math.floor(Math.random() * 12);
-    return " ".repeat(spaces);
-}
-
-function randomLineLength() {
-    return Math.floor(Math.random() * 30) + 20;
-}
-
-document.addEventListener("keydown", () => {
-    terminal.textContent += randomChar();
-    lineLength++;
-
-    // 到行尾就換行
-    if (lineLength >= maxLineLength) {
-        terminal.textContent += "\n" + randomIndent();
-        lineLength = 0;
-        maxLineLength = randomLineLength();
-    }
-
-    // 當機感
-    terminal.classList.add("glitch");
-    setTimeout(() => terminal.classList.remove("glitch"), 60);
-
-    window.scrollTo(0, document.body.scrollHeight);
-});
-</script>
-
-</body>
-</html>
