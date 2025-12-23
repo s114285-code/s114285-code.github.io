@@ -10,100 +10,99 @@
   </body>
 </html>
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-    <title>我的 Pointer Pointer</title>
-    <style>
-        * { margin: 0; padding: 0; }
-        body { 
-            background: #000; 
-            overflow: hidden; 
-            font-family: Arial, sans-serif;
-            cursor: none;
-        }
-        #container { 
-            position: relative; 
-            width: 100vw; 
-            height: 100vh; 
-        }
-        #status { 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%);
-            color: #fff; 
-            font-size: 24px; 
-            text-align: center;
-            z-index: 10;
-        }
-        #pointerImg { 
-            position: absolute; 
-            max-width: 90vw; 
-            max-height: 90vh; 
-            opacity: 0; 
-            transition: opacity 0.3s;
-            z-index: 5;
-        }
-        #pointerImg.show { opacity: 1; }
-    </style>
+<meta charset="UTF-8">
+<title>Hacker Terminal</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        color: #00ff00;
+        font-family: "Courier New", monospace;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    #terminal {
+        padding: 20px;
+        white-space: pre-wrap;
+        font-size: 16px;
+        line-height: 1.4;
+        animation: flicker 0.15s infinite alternate;
+    }
+
+    @keyframes flicker {
+        from { opacity: 0.95; }
+        to { opacity: 1; }
+    }
+
+    .cursor {
+        display: inline-block;
+        width: 10px;
+        background: #00ff00;
+        animation: blink 1s steps(2) infinite;
+    }
+
+    @keyframes blink {
+        0% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+
+    /* 當機抖動 */
+    .glitch {
+        animation: glitch 0.1s infinite;
+    }
+
+    @keyframes glitch {
+        0% { transform: translate(0,0); }
+        25% { transform: translate(-1px,1px); }
+        50% { transform: translate(1px,-1px); }
+        75% { transform: translate(-1px,-1px); }
+        100% { transform: translate(1px,1px); }
+    }
+</style>
 </head>
 <body>
-    <div id="container">
-        <div id="status">Finding pointer... Please hold still.</div>
-        <img id="pointerImg" src="" alt="Pointer">
-    </div>
 
-    <script>
-        // 模擬 Pointer Pointer 資料 (實際使用時替換您的圖片+座標)
-        const pointers = [
-            { x: 0.12, y: 0.34, img: 'https://images.unsplash.com/photo-1516321310764-9f3c9619b5d1?w=400' },
-            { x: 0.45, y: 0.23, img: 'https://images.unsplash.com/photo-1524504388940-b6b7e6d60541?w=400' },
-            { x: 0.67, y: 0.56, img: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=400' },
-            { x: 0.23, y: 0.78, img: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400' },
-            { x: 0.89, y: 0.12, img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400' },
-            // 加更多 {x:0-1, y:0-1, img:'您的圖片URL'} ...
-        ];
+<div id="terminal">
+> SYSTEM BOOTING...
+> ACCESS GRANTED
+> TYPE ANYTHING...
+<span class="cursor">&nbsp;</span>
+</div>
 
-        const statusEl = document.getElementById('status');
-        const imgEl = document.getElementById('pointerImg');
-        let timeoutId;
+<script>
+const terminal = document.getElementById("terminal");
 
-        document.addEventListener('mousemove', (e) => {
-            const rect = document.body.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / window.innerWidth;
-            const y = (e.clientY - rect.top) / window.innerHeight;
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/";
 
-            statusEl.textContent = 'Finding pointer... Please hold still.';
-            imgEl.classList.remove('show');
+function randomCode(length) {
+    let result = "";
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
 
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                // 找最近指向點
-                let closest = pointers[0];
-                let minDist = Math.hypot(x - closest.x, y - closest.y);
-                
-                for (let p of pointers) {
-                    const dist = Math.hypot(x - p.x, y - p.y);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        closest = p;
-                    }
-                }
+document.addEventListener("keydown", (e) => {
+    // 每敲一次鍵，就生成亂碼
+    const lines = Math.floor(Math.random() * 3) + 1;
 
-                // 顯示匹配圖片
-                imgEl.src = closest.img;
-                imgEl.style.left = (x * 100) + '%';
-                imgEl.style.top = (y * 100) + '%';
-                imgEl.style.transform = `translate(-50%, -50%)`;
-                imgEl.classList.add('show');
-                statusEl.textContent = '';
-            }, 800); // 0.8秒延遲增加真實感
-        });
+    for (let i = 0; i < lines; i++) {
+        const len = Math.floor(Math.random() * 40) + 20;
+        terminal.innerHTML += "\n> " + randomCode(len);
+    }
 
-        window.addEventListener('resize', () => {
-            imgEl.style.left = '50%';
-            imgEl.style.top = '50%';
-        });
-    </script>
+    terminal.classList.add("glitch");
+    setTimeout(() => terminal.classList.remove("glitch"), 100);
+
+    // 自動捲動到底
+    window.scrollTo(0, document.body.scrollHeight);
+});
+</script>
+
 </body>
 </html>
+
