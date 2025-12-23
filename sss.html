@@ -20,47 +20,77 @@ html, body {
     margin: 0;
     padding: 0;
     background: black;
-    color: #00ff00;
-    font-family: monospace;
     height: 100%;
     overflow: hidden;
+    font-family: monospace;
 }
 
-/* Matrix */
+/* Matrix 背景 */
 canvas {
     position: fixed;
     inset: 0;
     z-index: 0;
 }
 
-/* 可捲動終端機 */
+/* Terminal 容器 */
 #terminal {
     position: relative;
     z-index: 1;
     height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #00ff00;
+}
+
+/* 上方捲動區 */
+#buffer {
+    flex: 1;
     padding: 20px;
     white-space: pre-wrap;
+    overflow-y: auto;
     font-size: 16px;
     line-height: 1.5;
-    overflow-y: auto;
 }
 
-/* 錯誤視窗 */
+/* 底部輸入行（永遠可見） */
+#inputLine {
+    padding: 10px 20px;
+    border-top: 1px solid #003300;
+    background: rgba(0,0,0,0.85);
+    font-size: 16px;
+}
+
+/* 錯誤警告視窗 */
 #error {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    border: 1px solid #00ff00;
-    padding: 12px 16px;
+    top: 25%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    padding: 24px;
     background: rgba(0,0,0,0.95);
+    border: 2px solid red;
+    color: red;
     display: none;
-    z-index: 2;
-    animation: blink 0.2s infinite alternate;
+    z-index: 3;
+    text-align: center;
+    box-shadow: 0 0 30px red;
+    animation: pulse 0.3s infinite alternate;
 }
 
-@keyframes blink {
-    from { opacity: 0.8; }
-    to { opacity: 1; }
+@keyframes pulse {
+    from { box-shadow: 0 0 10px red; }
+    to { box-shadow: 0 0 40px red; }
+}
+
+/* 紅光警報 */
+.alert {
+    animation: redflash 0.15s infinite alternate;
+}
+
+@keyframes redflash {
+    from { background: black; }
+    to { background: #200000; }
 }
 </style>
 </head>
@@ -68,8 +98,16 @@ canvas {
 <body>
 
 <canvas id="matrix"></canvas>
-<div id="terminal"></div>
+
+<div id="terminal">
+    <div id="buffer"></div>
+    <div id="inputLine">&gt; </div>
+</div>
+
 <div id="error"></div>
+
+<!-- 警報聲 -->
+<audio id="alarm" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
 
 <script>
 /* ===== Matrix ===== */
@@ -77,11 +115,11 @@ const canvas = document.getElementById("matrix");
 const ctx = canvas.getContext("2d");
 
 function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
 }
 resize();
-window.addEventListener("resize", resize);
+addEventListener("resize", resize);
 
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const fontSize = 14;
@@ -91,23 +129,22 @@ let drops = new Array(columns).fill(1);
 setInterval(() => {
     ctx.fillStyle = "rgba(0,0,0,0.08)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     ctx.fillStyle = "#00ff00";
     ctx.font = fontSize + "px monospace";
 
-    for (let i = 0; i < drops.length; i++) {
+    drops.forEach((y, i) => {
         const t = letters[Math.floor(Math.random() * letters.length)];
-        ctx.fillText(t, i * fontSize, drops[i] * fontSize);
-        if (drops[i] * fontSize > canvas.height && Math.random() > 0.98) {
-            drops[i] = 0;
-        }
+        ctx.fillText(t, i * fontSize, y * fontSize);
+        if (y * fontSize > canvas.height && Math.random() > 0.98) drops[i] = 0;
         drops[i]++;
-    }
+    });
 }, 50);
 
-/* ===== Terminal ===== */
-const terminal = document.getElementById("terminal");
+/* ===== Terminal Logic ===== */
+const buffer = document.getElementById("buffer");
+const inputLine = document.getElementById("inputLine");
 const errorBox = document.getElementById("error");
+const alarm = document.getElementById("alarm");
 
 const tokens = [
     "int","const","void","malloc","free","if","while","return",
@@ -117,47 +154,51 @@ const tokens = [
 ];
 
 const errors = [
-    "SEGMENTATION FAULT",
-    "ACCESS DENIED",
-    "STACK OVERFLOW",
-    "KERNEL PANIC",
-    "MEMORY CORRUPTION"
+    "⚠ CRITICAL SYSTEM FAILURE ⚠\nUNAUTHORIZED MEMORY ACCESS",
+    "⛔ SECURITY BREACH DETECTED ⛔\nACCESS DENIED",
+    "⚠ KERNEL PANIC ⚠\nSTACK OVERFLOW",
+    "⛔ INTRUSION ALERT ⛔\nTRACE ROUTE IDENTIFIED"
 ];
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
 function indent(){return " ".repeat(rand(0,10));}
 
-let count = 0;
-let max = rand(6,10);
+let tokenCount = 0;
+let maxTokens = rand(6,10);
 let keystrokes = 0;
 
-terminal.textContent = indent();
+// 初始化
+buffer.textContent = indent();
 
 document.addEventListener("keydown", () => {
-    terminal.textContent += tokens[rand(0,tokens.length-1)] + " ";
-    count++;
+    const token = tokens[rand(0,tokens.length-1)];
+    inputLine.textContent += token + " ";
+    tokenCount++;
     keystrokes++;
 
-    if (count >= max) {
-        terminal.textContent += "\n";
-        if (Math.random() < 0.35) terminal.textContent += "\n";
-        terminal.textContent += indent();
-        count = 0;
-        max = rand(6,10);
+    if (tokenCount >= maxTokens) {
+        buffer.textContent += inputLine.textContent + "\n";
+        if (Math.random() < 0.35) buffer.textContent += "\n";
+        inputLine.textContent = "> " + indent();
+        tokenCount = 0;
+        maxTokens = rand(6,10);
+        buffer.scrollTop = buffer.scrollHeight;
     }
 
-    /* 每 8 次必定跳錯誤 */
-    if (keystrokes % 8 === 0) {
+    // 每 10 次鍵盤 → 警告
+    if (keystrokes % 10 === 0) {
         errorBox.textContent = errors[rand(0,errors.length-1)];
         errorBox.style.display = "block";
-        setTimeout(()=>errorBox.style.display="none",1800);
-    }
+        document.body.classList.add("alert");
+        alarm.play().catch(()=>{});
 
-    /* 關鍵：真的往上捲 */
-    terminal.scrollTop = terminal.scrollHeight;
+        setTimeout(() => {
+            errorBox.style.display = "none";
+            document.body.classList.remove("alert");
+        }, 2200);
+    }
 });
 </script>
 
 </body>
 </html>
-
