@@ -59,7 +59,7 @@ canvas{
 
 /* ===== RED ALERT ===== */
 .alert{
-    animation:redFlash 0.05s infinite alternate;
+    animation:redFlash 0.06s infinite alternate;
 }
 @keyframes redFlash{
     from{background:black;}
@@ -99,18 +99,27 @@ canvas{
     line-height:1.7;
 }
 
-/* ===== FINAL HALT ===== */
-#halt{
+/* ===== CRT BROKEN EFFECT ===== */
+#static{
     position:fixed;
     inset:0;
     background:black;
-    color:red;
     display:none;
-    align-items:center;
-    justify-content:center;
-    font-size:36px;
-    letter-spacing:6px;
-    z-index:100;
+    z-index:999;
+}
+
+.static-line{
+    position:absolute;
+    width:100%;
+    height:2px;
+    background:white;
+    opacity:0.15;
+    animation:staticMove 0.05s linear infinite;
+}
+
+@keyframes staticMove{
+    from{transform:translateY(0);}
+    to{transform:translateY(100vh);}
 }
 </style>
 </head>
@@ -124,7 +133,7 @@ canvas{
     <div id="inputLine">&gt; </div>
 </div>
 
-<div id="halt">SYSTEM HALTED</div>
+<div id="static"></div>
 
 <audio id="alarm" src="data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
 
@@ -142,8 +151,7 @@ addEventListener("resize",resize);
 
 let fontSize=14;
 let letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-let columns;
-let drops;
+let columns, drops;
 
 function resetMatrix(){
     columns=Math.floor(canvas.width/fontSize);
@@ -155,7 +163,7 @@ let matrixSpeed=45;
 let matrixInterval=setInterval(drawMatrix,matrixSpeed);
 
 function drawMatrix(){
-    ctx.fillStyle="rgba(0,0,0,0.15)";
+    ctx.fillStyle="rgba(0,0,0,0.18)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
     ctx.fillStyle="#00ff00";
     ctx.font=fontSize+"px monospace";
@@ -172,7 +180,7 @@ function drawMatrix(){
 const buffer=document.getElementById("buffer");
 const inputLine=document.getElementById("inputLine");
 const alarm=document.getElementById("alarm");
-const halt=document.getElementById("halt");
+const staticScreen=document.getElementById("static");
 
 const tokens=[
  "int","void","const","malloc","free","while","return",
@@ -197,14 +205,17 @@ let tokenCount=0;
 let maxTokens=rand(4,8);
 let keystrokes=0;
 let errorCount=0;
-let halted=false;
+let apocalypse=false;
 
 buffer.textContent=indent();
 
+/* ===== ERROR SPAWN ===== */
 function spawnError(){
     const box=document.createElement("div");
     box.className="error";
-    box.style.top=rand(10,50)+"%";
+    box.style.top=rand(5,80)+"%";
+    box.style.left=rand(10,80)+"%";
+    box.style.transform="translate(-50%,-50%)";
     box.innerHTML=
         `<h1>⚠ SYSTEM FAILURE ⚠</h1>
          <p>${fatalErrors[rand(0,fatalErrors.length-1)]}<br>
@@ -215,12 +226,24 @@ function spawnError(){
     document.body.classList.add("alert");
     alarm.play().catch(()=>{});
 
-    setTimeout(()=>box.remove(),rand(1200,2500));
+    setTimeout(()=>box.remove(),rand(2000,3500));
 }
 
-/* ===== KEY INPUT ===== */
+/* ===== FINAL STATIC ===== */
+function triggerStatic(){
+    staticScreen.style.display="block";
+    for(let i=0;i<120;i++){
+        const line=document.createElement("div");
+        line.className="static-line";
+        line.style.top=rand(0,innerHeight)+"px";
+        line.style.opacity=Math.random()*0.4;
+        staticScreen.appendChild(line);
+    }
+}
+
+/* ===== INPUT ===== */
 document.addEventListener("keydown",()=>{
-    if(halted) return;
+    if(apocalypse) return;
 
     const token=tokens[rand(0,tokens.length-1)];
     inputLine.textContent+=token+" ";
@@ -236,25 +259,24 @@ document.addEventListener("keydown",()=>{
         buffer.scrollTop=buffer.scrollHeight;
     }
 
-    /* 世界末日進程 */
-    if(Math.random()<0.35){
+    /* 漸進式失控 */
+    if(Math.random()<0.25){
         spawnError();
         errorCount++;
     }
 
-    /* Matrix 失控加速 */
-    if(errorCount%3===0){
+    if(errorCount>8){
         clearInterval(matrixInterval);
-        matrixSpeed=Math.max(15,matrixSpeed-5);
+        matrixSpeed=Math.max(20,matrixSpeed-3);
         matrixInterval=setInterval(drawMatrix,matrixSpeed);
     }
 
-    /* 最終崩潰 */
-    if(errorCount>15){
-        halted=true;
+    /* 世界結局 */
+    if(errorCount>30){
+        apocalypse=true;
         clearInterval(matrixInterval);
-        halt.style.display="flex";
         document.body.classList.remove("alert");
+        triggerStatic();
     }
 });
 </script>
