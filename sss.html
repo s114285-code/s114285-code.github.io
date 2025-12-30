@@ -13,8 +13,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>SYSTEM // APOCALYPSE</title>
-
+<title>SYSTEM APOCALYPSE</title>
 <style>
 html,body{
     margin:0;
@@ -24,15 +23,11 @@ html,body{
     overflow:hidden;
     font-family:monospace;
 }
-
-/* MATRIX */
 canvas{
     position:fixed;
     inset:0;
     z-index:0;
 }
-
-/* TERMINAL */
 #terminal{
     position:absolute;
     inset:0;
@@ -41,29 +36,21 @@ canvas{
     font-size:18px;
     line-height:1.7;
     white-space:pre-wrap;
-    overflow:hidden;
     z-index:1;
-    text-shadow:
-        0 0 2px rgba(0,255,100,.6),
-        0 0 6px rgba(0,255,100,.3);
+    text-shadow:0 0 2px rgba(0,255,100,.6),0 0 6px rgba(0,255,100,.3);
 }
-
-/* CRT */
 #crt{
     pointer-events:none;
     position:fixed;
     inset:0;
-    z-index:999;
-    background:
-        repeating-linear-gradient(
-            to bottom,
-            rgba(0,0,0,0) 0px,
-            rgba(0,0,0,.15) 3px
-        );
+    background:repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0) 0px,
+        rgba(0,0,0,.15) 3px
+    );
     mix-blend-mode:overlay;
+    z-index:999;
 }
-
-/* ERROR */
 .error{
     position:fixed;
     width:420px;
@@ -74,17 +61,8 @@ canvas{
     box-shadow:0 0 80px red;
     z-index:10;
 }
-
-/* RED FLASH */
 #redFlash{
     position:fixed;
     inset:0;
     background:red;
-    display:none;
-    z-index:998;
-}
-
-/* STATIC */
-#static{
-    position:fixed;
-    in
+    d
