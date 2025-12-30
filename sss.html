@@ -13,7 +13,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>SYSTEM APOCALYPSE</title>
+<title>SYSTEM // FINAL EASTER EGG</title>
 
 <style>
 html,body{
@@ -25,120 +25,63 @@ html,body{
     font-family:monospace;
 }
 
-/* MATRIX */
-canvas{
-    position:fixed;
-    inset:0;
-    z-index:0;
-}
-
 /* TERMINAL */
 #terminal{
-    position:relative;
-    z-index:1;
-    height:100vh;
-    display:flex;
-    flex-direction:column;
-    color:#00ff66;
-}
-
-#buffer{
-    flex:1;
+    position:absolute;
+    inset:0;
     padding:20px;
-    white-space:pre-wrap;
-    overflow-y:auto;
+    color:#00ff66;
     font-size:18px;
     line-height:1.7;
+    white-space:pre-wrap;
+    overflow:hidden;
     text-shadow:
-        0 0 2px rgba(0,255,100,0.6),
-        0 0 6px rgba(0,255,100,0.3);
+        0 0 2px rgba(0,255,100,.6),
+        0 0 6px rgba(0,255,100,.3);
 }
 
-#inputLine{
-    padding:10px 20px;
-    font-size:20px;
-    border-top:1px solid #400000;
-    background:rgba(0,0,0,0.9);
-    text-shadow:
-        0 0 3px rgba(0,255,100,0.8),
-        0 0 8px rgba(0,255,100,0.4);
-}
-
-/* CRT SCANLINES */
+/* CRT */
 #crt{
     pointer-events:none;
     position:fixed;
     inset:0;
-    z-index:998;
     background:
         repeating-linear-gradient(
             to bottom,
             rgba(0,0,0,0) 0px,
-            rgba(0,0,0,0) 2px,
-            rgba(0,0,0,0.15) 3px
+            rgba(0,0,0,.15) 3px
         );
     mix-blend-mode:overlay;
+    z-index:999;
 }
 
-/* RED ALERT */
-.alert{
-    animation:redFlash 0.06s infinite alternate;
-}
-@keyframes redFlash{
-    from{background:black;}
-    to{background:#500000;}
-}
-
-/* ERROR BOX */
+/* ERROR WINDOW */
 .error{
     position:fixed;
+    width:420px;
+    padding:24px;
+    background:black;
     border:3px solid red;
     color:red;
-    background:rgba(0,0,0,0.97);
-    box-shadow:0 0 120px red;
-    padding:26px;
-    width:520px;
+    box-shadow:0 0 80px red;
     z-index:10;
 }
 
-.error h1{
-    margin:0 0 12px;
-    font-size:22px;
-    letter-spacing:3px;
-}
-
-.error p{
-    margin:0;
-    font-size:15px;
-    line-height:1.6;
-}
-
-/* GLITCH TEXT */
-.glitch{
-    animation:glitch 0.12s infinite;
-}
-@keyframes glitch{
-    0%{transform:translate(0);filter:blur(0);}
-    40%{transform:translate(-1px,1px);filter:blur(0.5px);}
-    70%{transform:translate(1px,-1px);filter:blur(1px);}
-    100%{transform:translate(0);filter:blur(0.3px);}
-}
-
-/* REDOUT */
-#redout{
+/* RED FLASH */
+#redFlash{
     position:fixed;
     inset:0;
     background:red;
     display:none;
-    z-index:999;
+    z-index:998;
 }
 
 /* STATIC */
 #static{
     position:fixed;
     inset:0;
-    background:black;
     display:none;
+    background:black;
     z-index:1000;
 }
 .static-line{
@@ -146,156 +89,132 @@ canvas{
     width:100%;
     height:2px;
     background:white;
-    opacity:0.2;
-    animation:staticMove 0.05s linear infinite;
+    opacity:0.25;
+    animation:move 0.05s linear infinite;
 }
-@keyframes staticMove{
+@keyframes move{
     from{transform:translateY(0);}
     to{transform:translateY(100vh);}
+}
+
+/* GLITCH */
+.glitch{
+    animation:glitch .12s infinite;
+}
+@keyframes glitch{
+    0%{transform:none}
+    40%{transform:translate(-1px,1px)}
+    70%{transform:translate(1px,-1px)}
 }
 </style>
 </head>
 
 <body>
 
-<canvas id="matrix"></canvas>
-
-<div id="terminal">
-    <div id="buffer"></div>
-    <div id="inputLine">&gt; </div>
-</div>
-
+<div id="terminal"></div>
 <div id="crt"></div>
-<div id="redout"></div>
+<div id="redFlash"></div>
 <div id="static"></div>
 
-<audio id="alarm" src="data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
-
 <script>
-/* MATRIX */
-const canvas=document.getElementById("matrix");
-const ctx=canvas.getContext("2d");
-function resize(){
-    canvas.width=innerWidth;
-    canvas.height=innerHeight;
-}
-resize();
-addEventListener("resize",resize);
-
-const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-let fontSize=14, drops=[];
-function resetMatrix(){
-    const cols=Math.floor(canvas.width/fontSize);
-    drops=Array(cols).fill(1);
-}
-resetMatrix();
-
-let matrixSpeed=45;
-let matrixTimer=setInterval(drawMatrix,matrixSpeed);
-
-function drawMatrix(){
-    ctx.fillStyle="rgba(0,0,0,0.18)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="#00ff66";
-    ctx.font=fontSize+"px monospace";
-    drops.forEach((y,i)=>{
-        const t=letters[Math.floor(Math.random()*letters.length)];
-        ctx.fillText(t,i*fontSize,y*fontSize);
-        if(y*fontSize>canvas.height && Math.random()>0.95) drops[i]=0;
-        drops[i]++;
-    });
-}
-
-/* TERMINAL LOGIC */
-const buffer=document.getElementById("buffer");
-const inputLine=document.getElementById("inputLine");
-const alarm=document.getElementById("alarm");
-const redout=document.getElementById("redout");
+const terminal=document.getElementById("terminal");
+const redFlash=document.getElementById("redFlash");
 const staticScreen=document.getElementById("static");
 
 const tokens=[
  "int","void","malloc","free","kernel","panic",
  "syscall","fork()","exec()","root","sudo",
- "0xDEADBEEF","0xBADC0DE"
+ "0xDEADBEEF","NULL","buffer","overflow"
 ];
+
 const errors=[
- "KERNEL PANIC","MEMORY CORRUPTION","STACK OVERFLOW",
- "SEGMENTATION FAULT","SYSTEM INTEGRITY LOST","UNAUTHORIZED ACCESS"
+ "KERNEL PANIC",
+ "MEMORY CORRUPTION",
+ "STACK OVERFLOW",
+ "SEGMENTATION FAULT",
+ "ACCESS VIOLATION"
 ];
+
+let line="";
+let lines=[];
+let triggered=false;
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function indent(){return" ".repeat(rand(0,14));}
+function indent(){return" ".repeat(rand(0,12));}
 
-let tokenCount=0,maxTokens=rand(4,8);
-let keystrokes=0,errorCount=0,phase=0;
+function render(){
+    terminal.textContent=lines.join("\n")+"\n"+line;
+    terminal.scrollTop=terminal.scrollHeight;
+}
 
-buffer.textContent=indent();
+document.addEventListener("keydown",e=>{
+    if(triggered) return;
+
+    if(e.key==="Enter"){
+        triggered=true;
+        startApocalypse();
+        return;
+    }
+
+    const t=tokens[rand(0,tokens.length-1)];
+    line+=t+" ";
+
+    if(Math.random()<0.15){
+        lines.push(indent()+line);
+        if(Math.random()<0.3) lines.push("");
+        line="";
+    }
+
+    render();
+});
+
+/* APOCALYPSE */
+function startApocalypse(){
+    terminal.classList.add("glitch");
+
+    let count=0;
+    const spam=setInterval(()=>{
+        spawnError();
+        count++;
+        if(count>12){
+            clearInterval(spam);
+            flashRed();
+        }
+    },200);
+}
 
 function spawnError(){
     const e=document.createElement("div");
     e.className="error";
-    e.style.top=rand(0,80)+"%";
-    e.style.left=rand(0,70)+"%";
+    e.style.top=rand(5,70)+"%";
+    e.style.left=rand(5,60)+"%";
     e.innerHTML=
-        `<h1>⚠ SYSTEM FAILURE ⚠</h1>
-         <p>${errors[rand(0,errors.length-1)]}<br>
-         ADDRESS: 0x${Math.random().toString(16).slice(2,10)}</p>`;
+        `<b>⚠ SYSTEM FAILURE ⚠</b><br>
+         ${errors[rand(0,errors.length-1)]}<br>
+         ADDRESS: 0x${Math.random().toString(16).slice(2,10)}`;
     document.body.appendChild(e);
-    document.body.classList.add("alert");
-    alarm.play().catch(()=>{});
 }
 
-function triggerStatic(){
-    staticScreen.style.display="block";
-    for(let i=0;i<160;i++){
-        const l=document.createElement("div");
-        l.className="static-line";
-        l.style.top=rand(0,innerHeight)+"px";
-        l.style.opacity=Math.random()*0.4;
-        staticScreen.appendChild(l);
-    }
+function flashRed(){
+    redFlash.style.display="block";
+    setTimeout(()=>{
+        redFlash.style.display="none";
+        freeze();
+    },400);
 }
 
-document.addEventListener("keydown",()=>{
-    if(phase>=3) return;
-
-    const token=tokens[rand(0,tokens.length-1)];
-    inputLine.textContent+=token+" ";
-    tokenCount++; keystrokes++;
-
-    if(tokenCount>=maxTokens){
-        buffer.textContent+=inputLine.textContent+"\n";
-        if(Math.random()<0.4) buffer.textContent+="\n";
-        inputLine.textContent="> "+indent();
-        tokenCount=0;
-        maxTokens=rand(4,8);
-        buffer.scrollTop=buffer.scrollHeight;
-    }
-
-    if(keystrokes>12 && Math.random()<0.25){
-        spawnError();
-        errorCount++;
-    }
-
-    if(errorCount>15){
-        buffer.classList.add("glitch");
-        inputLine.classList.add("glitch");
-        buffer.style.fontSize="20px";
-    }
-
-    if(errorCount>25 && phase===1){
-        phase=2;
-        redout.style.display="block";
-        setTimeout(()=>{
-            redout.style.display="none";
-            phase=3;
-            clearInterval(matrixTimer);
-            triggerStatic();
-        },1500);
-    }
-
-    if(errorCount>0) phase=1;
-});
+function freeze(){
+    setTimeout(()=>{
+        staticScreen.style.display="block";
+        for(let i=0;i<160;i++){
+            const l=document.createElement("div");
+            l.className="static-line";
+            l.style.top=rand(0,innerHeight)+"px";
+            staticScreen.appendChild(l);
+        }
+        terminal.textContent+="\n\nLAST INPUT RECEIVED.\nSIGNAL LOST.";
+    },500);
+}
 </script>
 
 </body>
