@@ -14,6 +14,7 @@
 <head>
 <meta charset="UTF-8">
 <title>SYSTEM APOCALYPSE</title>
+
 <style>
 html,body{
     margin:0;
@@ -23,44 +24,71 @@ html,body{
     overflow:hidden;
     font-family:monospace;
 }
+
+/* MATRIX */
 canvas{
     position:fixed;
     inset:0;
     z-index:0;
 }
+
+/* TERMINAL */
 #terminal{
     position:absolute;
     inset:0;
     padding:20px;
+    display:flex;
+    flex-direction:column;
     color:#00ff66;
     font-size:18px;
     line-height:1.7;
-    white-space:pre-wrap;
     z-index:1;
-    text-shadow:0 0 2px rgba(0,255,100,.6),0 0 6px rgba(0,255,100,.3);
+    text-shadow:
+        0 0 2px rgba(0,255,100,.6),
+        0 0 6px rgba(0,255,100,.3);
 }
+
+/* SCROLLING OUTPUT */
+#output{
+    flex:1;
+    overflow-y:auto;
+    white-space:pre-wrap;
+}
+
+/* CURRENT LINE */
+#cursor{
+    white-space:pre-wrap;
+}
+
+/* CRT */
 #crt{
     pointer-events:none;
     position:fixed;
     inset:0;
-    background:repeating-linear-gradient(
-        to bottom,
-        rgba(0,0,0,0) 0px,
-        rgba(0,0,0,.15) 3px
-    );
-    mix-blend-mode:overlay;
     z-index:999;
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            rgba(0,0,0,0) 0px,
+            rgba(0,0,0,.15) 3px
+        );
+    mix-blend-mode:overlay;
 }
+
+/* ERROR WINDOWS */
 .error{
     position:fixed;
-    width:420px;
-    padding:24px;
+    width:440px;
+    padding:26px;
     background:black;
     border:3px solid red;
     color:red;
-    box-shadow:0 0 80px red;
+    box-shadow:0 0 100px red;
     z-index:10;
+    font-size:15px;
 }
+
+/* RED FLASH */
 #redFlash{
     position:fixed;
     inset:0;
@@ -68,6 +96,8 @@ canvas{
     display:none;
     z-index:998;
 }
+
+/* STATIC */
 #static{
     position:fixed;
     inset:0;
@@ -81,12 +111,14 @@ canvas{
     height:2px;
     background:white;
     opacity:0.25;
-    animation:move 0.05s linear infinite;
+    animation:noise 0.05s linear infinite;
 }
-@keyframes move{
-    from{transform:translateY(0);}
-    to{transform:translateY(100vh);}
+@keyframes noise{
+    from{transform:translateY(0)}
+    to{transform:translateY(100vh)}
 }
+
+/* GLITCH */
 .glitch{
     animation:glitch .12s infinite;
 }
@@ -101,120 +133,178 @@ canvas{
 <body>
 
 <canvas id="matrix"></canvas>
-<div id="terminal"></div>
+
+<div id="terminal">
+    <div id="output">
+> CONNECTED TO REMOTE SYSTEM
+> TYPE ANY KEY
+> PRESS ENTER TO EXECUTE
+
+    </div>
+    <div id="cursor"></div>
+</div>
+
 <div id="crt"></div>
 <div id="redFlash"></div>
 <div id="static"></div>
 
 <script>
-/* ===== MATRIX ===== */
-const canvas=document.getElementById("matrix");
-const ctx=canvas.getContext("2d");
+/* =====================================================
+   CINEMATIC MATRIX RAIN (高密度・亮頭・殘影)
+===================================================== */
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+
 function resize(){
-    canvas.width=innerWidth;
-    canvas.height=innerHeight;
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
 }
 resize();
-addEventListener("resize",resize);
+addEventListener("resize", resize);
 
-const chars="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%";
-let fontSize=14;
-let drops=Array(Math.floor(canvas.width/fontSize)).fill(0);
-let matrixRunning=true;
+const fontSize = 11;
+const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*+-/=<>";
+
+let columns = Math.floor(canvas.width / fontSize);
+let drops = Array(columns).fill(0).map(()=>Math.random()*canvas.height);
+let matrixRunning = true;
 
 function drawMatrix(){
     if(!matrixRunning) return;
-    ctx.fillStyle="rgba(0,0,0,0.2)";
+
+    ctx.fillStyle = "rgba(0,0,0,0.08)";
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle="#00ff66";
-    ctx.font=fontSize+"px monospace";
-    drops.forEach((y,i)=>{
-        const t=chars[Math.floor(Math.random()*chars.length)];
-        ctx.fillText(t,i*fontSize,y*fontSize);
-        if(y*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
+    ctx.font = fontSize + "px monospace";
+
+    for(let i=0;i<drops.length;i++){
+        const x = i * fontSize;
+        const y = drops[i] * fontSize;
+
+        /* 亮頭 */
+        ctx.fillStyle = "#ccffcc";
+        ctx.fillText(chars[Math.floor(Math.random()*chars.length)], x, y);
+
+        /* 尾巴 */
+        for(let t=1;t<14;t++){
+            ctx.fillStyle = `rgba(0,255,100,${1 - t/14})`;
+            ctx.fillText(
+                chars[Math.floor(Math.random()*chars.length)],
+                x,
+                y - t * fontSize
+            );
+        }
+
+        if(y > canvas.height && Math.random() > 0.92){
+            drops[i] = 0;
+        }
         drops[i]++;
-    });
+    }
 }
-setInterval(drawMatrix,45);
+let matrixTimer = setInterval(drawMatrix, 28);
 
-/* ===== TERMINAL ===== */
-const terminal=document.getElementById("terminal");
-terminal.textContent=
-"> CONNECTED TO REMOTE SYSTEM\n"+
-"> TYPE ANY KEY TO BEGIN\n\n";
+/* =====================================================
+   TERMINAL + REAL SCROLL
+===================================================== */
+const output = document.getElementById("output");
+const cursor = document.getElementById("cursor");
 
-const tokens=["int","void","malloc","free","kernel","panic","syscall","fork()","exec()","root","sudo","0xDEADBEEF"];
-const errors=["KERNEL PANIC","MEMORY CORRUPTION","STACK OVERFLOW","ACCESS VIOLATION"];
+const tokens = [
+ "int","void","malloc","free","kernel","panic",
+ "syscall","fork()","exec()","root","sudo",
+ "buffer","overflow","NULL","0xDEADBEEF"
+];
 
-let line="";
-let lines=[];
-let triggered=false;
+const errors = [
+ "KERNEL PANIC",
+ "MEMORY CORRUPTION",
+ "STACK OVERFLOW",
+ "SEGMENTATION FAULT",
+ "ACCESS VIOLATION"
+];
+
+let currentLine = "";
+let triggered = false;
 
 function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
-function indent(){return" ".repeat(rand(0,10));}
+function indent(){return " ".repeat(rand(0,14));}
 
-function render(){
-    terminal.textContent=lines.join("\n")+"\n"+line;
+function scrollIfNeeded(){
+    if(output.scrollHeight > output.clientHeight){
+        output.scrollTop = output.scrollHeight;
+    }
 }
 
 document.addEventListener("keydown",e=>{
     if(triggered) return;
 
-    if(e.key==="Enter"){
-        triggered=true;
+    if(e.key === "Enter"){
+        triggered = true;
         startApocalypse();
         return;
     }
 
-    const t=tokens[rand(0,tokens.length-1)];
-    line+=t+" ";
+    currentLine += tokens[rand(0,tokens.length-1)] + " ";
+    cursor.textContent = currentLine;
 
-    if(Math.random()<0.15){
-        lines.push(indent()+line);
-        if(Math.random()<0.3) lines.push("");
-        line="";
+    if(Math.random() < 0.18){
+        output.textContent += indent() + currentLine + "\n";
+        if(Math.random() < 0.35) output.textContent += "\n";
+        currentLine = "";
+        cursor.textContent = "";
+        scrollIfNeeded();
     }
-    render();
 });
 
-/* ===== APOCALYPSE ===== */
+/* =====================================================
+   APOCALYPSE SEQUENCE (Enter Only)
+===================================================== */
 function startApocalypse(){
-    terminal.classList.add("glitch");
-    let count=0;
-    const spam=setInterval(()=>{
+    document.body.classList.add("glitch");
+    let count = 0;
+
+    const spam = setInterval(()=>{
         spawnError();
         count++;
-        if(count>10){
+        if(count > 12){
             clearInterval(spam);
             flashRed();
         }
-    },220);
+    }, 220);
 }
 
 function spawnError(){
-    const e=document.createElement("div");
-    e.className="error";
-    e.style.top=rand(5,70)+"%";
-    e.style.left=rand(5,60)+"%";
-    e.innerHTML="<b>⚠ SYSTEM FAILURE ⚠</b><br>"+errors[rand(0,errors.length-1)];
+    const e = document.createElement("div");
+    e.className = "error";
+    e.style.top = rand(5,70) + "%";
+    e.style.left = rand(5,60) + "%";
+    e.innerHTML =
+        "<b>⚠ SYSTEM FAILURE ⚠</b><br>" +
+        errors[rand(0,errors.length-1)] +
+        "<br>ADDRESS: 0x" + Math.random().toString(16).slice(2,10);
     document.body.appendChild(e);
 }
 
 function flashRed(){
-    const red=document.getElementById("redFlash");
-    red.style.display="block";
+    const red = document.getElementById("redFlash");
+    red.style.display = "block";
+
     setTimeout(()=>{
-        red.style.display="none";
-        matrixRunning=false;
-        document.getElementById("static").style.display="block";
-        for(let i=0;i<150;i++){
-            const l=document.createElement("div");
-            l.className="static-line";
-            l.style.top=rand(0,innerHeight)+"px";
-            document.getElementById("static").appendChild(l);
+        red.style.display = "none";
+        matrixRunning = false;
+        clearInterval(matrixTimer);
+
+        const stat = document.getElementById("static");
+        stat.style.display = "block";
+        for(let i=0;i<180;i++){
+            const l = document.createElement("div");
+            l.className = "static-line";
+            l.style.top = Math.random()*innerHeight + "px";
+            stat.appendChild(l);
         }
-        terminal.textContent+="\n\nLAST INPUT RECEIVED.\nSIGNAL LOST.";
-    },400);
+
+        output.textContent += "\nLAST INPUT RECEIVED.\nSIGNAL LOST.\n";
+        scrollIfNeeded();
+    }, 400);
 }
 </script>
 
